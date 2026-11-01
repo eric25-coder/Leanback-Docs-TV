@@ -38,7 +38,7 @@ async function startServer() {
       const prompt = `Provide a structured summary of the following ${documentType.toUpperCase()} document titled "${documentTitle}". Include key takeaways, main sections or data points, and executive notes suitable for an Android TV viewer.\n\nContent:\n${typeof content === 'string' ? content.substring(0, 15000) : JSON.stringify(content).substring(0, 15000)}`;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
+        model: 'gemini-1.5-flash',
         contents: prompt,
         config: {
           systemInstruction: 'You are an expert AI document assistant for an Android TV productivity app. Provide clear, well-formatted summaries with bullet points.',
@@ -62,7 +62,7 @@ async function startServer() {
       const prompt = `Based on the following ${documentType.toUpperCase()} document titled "${documentTitle}", answer the user's question clearly and concisely.\n\nDocument Content:\n${typeof content === 'string' ? content.substring(0, 15000) : JSON.stringify(content).substring(0, 15000)}\n\nQuestion: ${question}`;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
+        model: 'gemini-1.5-flash',
         contents: prompt,
         config: {
           systemInstruction: 'You are an intelligent document Q&A assistant optimized for Android TV display.',
@@ -97,7 +97,7 @@ async function startServer() {
       }
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
+        model: 'gemini-1.5-flash',
         contents: userPrompt,
         config: {
           systemInstruction: 'You are an expert AI writing assistant for text editing on Android TV.',
