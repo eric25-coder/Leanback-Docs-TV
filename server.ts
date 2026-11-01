@@ -6,8 +6,24 @@ import { GoogleGenAI } from '@google/genai';
 
 dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Support both ESM (dev) and CJS (bundled)
+const getPaths = () => {
+  try {
+    const filename = fileURLToPath(import.meta.url);
+    return {
+      filename,
+      dirname: path.dirname(filename)
+    };
+  } catch {
+    // In CJS bundle, __filename and __dirname are available
+    return {
+      filename: __filename,
+      dirname: __dirname
+    };
+  }
+};
+
+const { filename: __filename_res, dirname: __dirname_res } = getPaths();
 
 async function startServer() {
   const app = express();
@@ -122,10 +138,10 @@ async function startServer() {
   } else {
     // In production, server.js is inside dist/ along with assets
     // Since __dirname is dist/, we serve from there
-    console.log(`Serving static assets from: ${__dirname}`);
-    app.use(express.static(__dirname));
+    console.log(`Serving static assets from: ${__dirname_res}`);
+    app.use(express.static(__dirname_res));
     app.get('*', (req, res) => {
-      res.sendFile(path.join(__dirname, 'index.html'));
+      res.sendFile(path.join(__dirname_res, 'index.html'));
     });
   }
 
