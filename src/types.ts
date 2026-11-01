@@ -84,3 +84,12 @@ export type ActiveModal =
   | { type: 'new_note'; noteId?: string }
   | { type: 'tv_storage' }
   | { type: 'nas_setup' };
+
+export interface StorageInfo {
+  free: number;
+  total: number;
+  freeFormatted: string;
+  totalFormatted: string;
+  percentUsed: number;
+}
+

@@ -8,6 +8,7 @@ import {
 
 interface DocumentLibraryProps {
   documents: DocumentItem[];
+  initialFilter?: string;
   onSelectDoc: (id: string, mode: 'view' | 'edit') => void;
   onRenameDoc: (id: string, newName: string) => void;
   onDeleteDoc: (id: string) => void;
@@ -20,6 +21,7 @@ type SortKey = 'title' | 'date' | 'size';
 
 export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
   documents,
+  initialFilter = 'all',
   onSelectDoc,
   onRenameDoc,
   onDeleteDoc,
@@ -27,7 +29,7 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
   onImportClick,
   onCreateFolder,
 }) => {
-  const [filterType, setFilterType] = useState<string>('all');
+  const [filterType, setFilterType] = useState<string>(initialFilter);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortKey, setSortKey] = useState<SortKey>('date');

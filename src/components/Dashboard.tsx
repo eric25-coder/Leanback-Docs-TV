@@ -6,17 +6,21 @@ import { DocumentItem, RecentFile } from '../types';
 interface DashboardProps {
   documents: DocumentItem[];
   recentFiles: RecentFile[];
+  storageInfo: any;
   onNewDoc: () => void;
   onSelectCategory: (cat: string) => void;
   onSelectDoc: (id: string) => void;
+  onFilterDocs: (type: string) => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ 
   documents, 
   recentFiles, 
+  storageInfo,
   onNewDoc, 
   onSelectCategory,
-  onSelectDoc
+  onSelectDoc,
+  onFilterDocs
 }) => {
   const stats = {
     total: documents.length,
@@ -73,12 +77,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <div className="absolute inset-0 z-20 flex flex-col justify-center items-end text-right px-20">
           <div className="max-w-2xl">
             <div className="flex items-center justify-end gap-3 mb-6">
-              <div className="bg-blue-600/20 backdrop-blur-xl px-5 py-2 rounded-full border border-blue-500/30 flex items-center gap-2">
+              <button 
+                onClick={() => onFilterDocs('all')}
+                className="bg-blue-600/20 backdrop-blur-xl px-5 py-2 rounded-full border border-blue-500/30 flex items-center gap-2 hover:bg-blue-600/40 transition-all outline-none focus:ring-2 focus:ring-white"
+              >
                 <CheckCircle2 className="w-5 h-5 text-blue-400" />
                 <span className="text-sm font-bold text-blue-100 uppercase tracking-widest">
                   {stats.total} Documents Accessible
                 </span>
-              </div>
+              </button>
             </div>
             
             <h2 className="text-7xl font-extrabold text-white mb-6 leading-[1.1] tracking-tight font-display">
@@ -86,9 +93,40 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <span className="text-blue-500">Document</span> Format
             </h2>
             
-            <p className="text-xl text-slate-300 mb-10 max-w-xl ml-auto leading-relaxed">
-              Managing {stats.pdf} PDFs, {stats.docx} Word, {stats.xlsx} Excel, and {stats.pptx} PowerPoint files directly from your TV storage.
-            </p>
+            <div className="flex flex-wrap justify-end gap-4 mb-10">
+              {[
+                { label: 'PDF', count: stats.pdf, color: 'text-red-400', id: 'pdf' },
+                { label: 'Word', count: stats.docx, color: 'text-blue-400', id: 'word' },
+                { label: 'Excel', count: stats.xlsx, color: 'text-emerald-400', id: 'excel' },
+                { label: 'Slides', count: stats.pptx, color: 'text-amber-400', id: 'ppt' },
+              ].map(stat => (
+                <button 
+                  key={stat.id}
+                  onClick={() => onFilterDocs(stat.id)}
+                  className="bg-slate-900/60 backdrop-blur-md px-4 py-2 rounded-xl border border-white/5 flex items-center gap-3 hover:border-blue-500/50 transition-all outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <span className={`text-xs font-black ${stat.color}`}>{stat.label}</span>
+                  <span className="text-lg font-bold text-white">{stat.count}</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="bg-slate-950/60 p-6 rounded-3xl border border-white/5 mb-10 w-[320px] ml-auto">
+              <div className="flex justify-between items-center mb-4">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">System Storage</span>
+                <span className="text-xs font-mono text-blue-400">{storageInfo.freeFormatted} Free</span>
+              </div>
+              <div className="h-2 bg-slate-900 rounded-full overflow-hidden mb-3">
+                <div 
+                  className="h-full bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full" 
+                  style={{ width: `${storageInfo.percentUsed}%` }} 
+                />
+              </div>
+              <div className="flex justify-between text-[10px] font-bold text-slate-600 uppercase">
+                <span>Used: {storageInfo.percentUsed}%</span>
+                <span>Total: {storageInfo.totalFormatted}</span>
+              </div>
+            </div>
 
             <button 
               onClick={onNewDoc}

@@ -19,7 +19,7 @@ import { NewNoteModal } from './components/NewNoteModal';
 import { RemoteSimulator } from './components/RemoteSimulator';
 import { ConversionModal } from './components/ConversionModal';
 import { NasSetupModal } from './components/NasSetupModal';
-import { Info } from 'lucide-react';
+import { Info, Tv } from 'lucide-react';
 
 // Services
 import { db } from './services/db';
@@ -35,21 +35,36 @@ export default function App() {
   const [nasConnections, setNasConnections] = useState<NetworkConnection[]>([]);
   const [activeModal, setActiveModal] = useState<ActiveModal>({ type: 'library' });
   const [activeTab, setActiveTab] = useState<string>('home');
+  const [docFilter, setDocFilter] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(true);
   const [initError, setInitError] = useState<string | null>(null);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [storageInfo, setStorageInfo] = useState<any>({ freeFormatted: '12.4 GB', totalFormatted: '32.0 GB', percentUsed: 38 });
 
   // Load Initial Data
   useEffect(() => {
     const init = async () => {
+      console.log('[STARTUP] Starting initialization sequence...');
+      
+      // Safety timeout: force loading screen to hide after 10 seconds
+      const safetyTimeout = setTimeout(() => {
+        if (isLoading) {
+          console.warn('[STARTUP] Safety timeout triggered - forcing initialization completion');
+          setIsLoading(false);
+          setInitError('Initialization is taking longer than expected. Some features may be limited.');
+        }
+      }, 10000);
+
       try {
+        console.log('[STARTUP] Loading database records...');
         const [savedSettings, savedRecent, savedNotes, savedNas] = await Promise.all([
-          db.getSettings().catch(e => { console.error('Settings load fail:', e); return null; }),
-          db.getRecentFiles().catch(e => { console.error('Recent files load fail:', e); return []; }),
-          db.getNotes().catch(e => { console.error('Notes load fail:', e); return []; }),
-          db.getNasConnections().catch(e => { console.error('NAS load fail:', e); return []; })
+          db.getSettings().catch(e => { console.error('[STARTUP] Settings load fail:', e); return null; }),
+          db.getRecentFiles().catch(e => { console.error('[STARTUP] Recent files load fail:', e); return []; }),
+          db.getNotes().catch(e => { console.error('[STARTUP] Notes load fail:', e); return []; }),
+          db.getNasConnections().catch(e => { console.error('[STARTUP] NAS load fail:', e); return []; })
         ]);
 
+        console.log('[STARTUP] Database records loaded successfully');
         if (savedSettings) setSettings(savedSettings);
         setRecentFiles(savedRecent);
         setNotes(savedNotes);
@@ -57,15 +72,20 @@ export default function App() {
         
         // Initial File Scan
         try {
+          console.log('[STARTUP] Checking filesystem permissions...');
           await fs.checkPermissions();
+          console.log('[STARTUP] Scanning for files...');
           await refreshFiles();
+          console.log('[STARTUP] Filesystem scan complete');
         } catch (fsErr) {
-          console.warn('Initial file scan failed, likely permission denied:', fsErr);
+          console.warn('[STARTUP] Initial file scan failed, likely permission denied:', fsErr);
         }
       } catch (error: any) {
-        console.error('CRITICAL INIT ERROR:', error);
+        console.error('[STARTUP] CRITICAL INIT ERROR:', error);
         setInitError(error?.message || 'Failed to initialize application data.');
       } finally {
+        clearTimeout(safetyTimeout);
+        console.log('[STARTUP] Initialization sequence finished');
         setIsLoading(false);
       }
     };
@@ -96,6 +116,12 @@ export default function App() {
     }));
 
     setDocuments([...noteDocs, ...internalFiles, ...usbFiles]);
+    
+    // Refresh storage info
+    try {
+      const info = await fs.getStorageInfo();
+      setStorageInfo(info);
+    } catch (e) {}
   };
 
   const handleSelectDoc = async (id: string, mode: 'view' | 'edit') => {
@@ -192,6 +218,11 @@ export default function App() {
     await refreshFiles();
   };
 
+  const handleFilterDocs = (filter: string) => {
+    setDocFilter(filter);
+    setActiveTab('documents');
+  };
+
   const handleNativeFilePick = async () => {
     try {
       const result = await FilePicker.pickFiles({ readData: true });
@@ -225,9 +256,18 @@ export default function App() {
   // Keyboard Navigation & Focus Management
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      console.log('[REMOTE] Key pressed:', e.key);
+      
       // Android TV Back / Escape logic
       if (e.key === 'Escape' || e.key === 'Backspace') {
-        // If a modal is open, close it first
+        // If an editor or viewer is open, close it
+        if (activeModal.type === 'viewer' || activeModal.type === 'editor' || activeModal.type === 'ai_copilot') {
+          e.preventDefault();
+          setActiveModal({ type: 'library' });
+          return;
+        }
+
+        // If other sub-modals are open
         if (activeModal.type !== 'library') {
           e.preventDefault();
           setActiveModal({ type: 'library' });
@@ -242,23 +282,50 @@ export default function App() {
         }
 
         // If on Home and no modal, show exit confirm
-        if (activeTab === 'home' && activeModal.type === 'library') {
+        if (activeTab === 'home' && activeModal.type === 'library' && !showExitConfirm) {
           e.preventDefault();
           setShowExitConfirm(true);
           return;
         }
+        
+        if (showExitConfirm) {
+          e.preventDefault();
+          setShowExitConfirm(false);
+          return;
+        }
       } 
       
-      // Home Key (Mapping 'h' as a fallback)
-      if (e.key === 'h' || e.key === 'H') {
+      // Home Key (Mapping 'h' as a fallback or actual Home key if mapped)
+      if (e.key === 'h' || e.key === 'H' || e.key === 'Home') {
         setActiveTab('home');
         setActiveModal({ type: 'library' });
         setShowExitConfirm(false);
+        // Focus first home element
+        setTimeout(() => {
+           const hero = document.querySelector('section button');
+           if (hero instanceof HTMLElement) hero.focus();
+        }, 100);
       }
     };
+
+    // Ensure focus is never lost (Spatial Navigation Help)
+    const handleFocusOut = (e: FocusEvent) => {
+      if (!e.relatedTarget) {
+        // Focus was lost to "nowhere", try to restore it
+        const lastFocused = e.target as HTMLElement;
+        if (lastFocused && document.body.contains(lastFocused)) {
+          setTimeout(() => lastFocused.focus(), 1);
+        }
+      }
+    };
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeModal, activeTab]);
+    window.addEventListener('focusout', handleFocusOut);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('focusout', handleFocusOut);
+    };
+  }, [activeModal, activeTab, showExitConfirm]);
 
   // Initial Focus Management for TV
   useEffect(() => {
@@ -280,7 +347,27 @@ export default function App() {
     return null;
   }, [activeModal, documents]);
 
-  if (isLoading) return null;
+  if (isLoading) {
+    return (
+      <div className="h-screen bg-slate-950 flex flex-col items-center justify-center p-10 text-center font-sans">
+        <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-[0_0_50px_rgba(37,99,235,0.3)] border border-white/20 mb-8 animate-pulse">
+           <Tv className="w-14 h-14 text-white" />
+        </div>
+        <h1 className="text-4xl font-extrabold text-white mb-2 tracking-tight">Leanback <span className="text-blue-400">Docs TV</span></h1>
+        <p className="text-slate-500 uppercase tracking-[0.3em] text-xs font-bold mb-10">Initializing Ecosystem</p>
+        <div className="w-64 h-1.5 bg-slate-900 rounded-full overflow-hidden border border-white/5">
+           <div className="h-full bg-blue-600 animate-[loading_2s_ease-in-out_infinite]" style={{ width: '40%' }} />
+        </div>
+        <style>{`
+          @keyframes loading {
+            0% { transform: translateX(-100%); }
+            50% { transform: translateX(150%); }
+            100% { transform: translateX(-100%); }
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   if (initError) {
     return (
@@ -316,10 +403,12 @@ export default function App() {
         }} />
 
         <main className="flex-1 flex flex-col relative">
+
           {activeTab === 'home' && activeModal.type === 'library' ? (
             <Dashboard 
               documents={documents}
               recentFiles={recentFiles}
+              storageInfo={storageInfo}
               onNewDoc={() => setActiveModal({ type: 'new_note' })} 
               onSelectCategory={(cat) => {
                 if (cat === 'usb' || cat === 'internal') setActiveTab(cat);
@@ -327,9 +416,11 @@ export default function App() {
                 if (cat === 'edit') setActiveTab('documents');
               }}
               onSelectDoc={(id) => handleSelectDoc(id, 'view')}
+              onFilterDocs={handleFilterDocs}
             />
           ) : activeTab === 'documents' || activeTab === 'recent' || activeTab === 'search' || activeTab === 'usb' || activeTab === 'internal' || activeTab === 'network' ? (
             <DocumentLibrary
+              initialFilter={docFilter}
               documents={documents.filter(d => {
                 if (activeTab === 'usb') return d.source === 'usb';
                 if (activeTab === 'internal') return d.source === 'internal';

@@ -67,25 +67,43 @@ export const fs = {
     });
   },
 
-  async getStorageInfo(): Promise<{ free: number; total: number }> {
+  async getStorageInfo(): Promise<{ free: number; total: number; freeFormatted: string; totalFormatted: string; percentUsed: number }> {
     try {
-      // Note: This often only reports for internal storage in standard Capacitor
-      const result = await Filesystem.stat({ path: '', directory: Directory.Documents });
-      // Filesystem.stat doesn't give free space directly in core Capacitor
-      // We'll mock reasonable values for the UI if stat doesn't provide it, 
-      // but usually stat returns size of the directory/file.
-      return { free: 1024 * 1024 * 500, total: 1024 * 1024 * 1024 * 8 }; // Mock 8GB total, 500MB free
+      // Mocking for TV environment as Capacitor Filesystem doesn't expose full disk info easily
+      // In a real app, you might use a dedicated plugin like 'capacitor-disk-space'
+      const total = 1024 * 1024 * 1024 * 32; // 32GB
+      const free = 1024 * 1024 * 1024 * 12.4; // 12.4GB free
+      const used = total - free;
+      const percentUsed = Math.round((used / total) * 100);
+
+      const formatSize = (bytes: number) => {
+        const gb = bytes / (1024 * 1024 * 1024);
+        return `${gb.toFixed(1)} GB`;
+      };
+
+      return { 
+        free, 
+        total, 
+        freeFormatted: formatSize(free), 
+        totalFormatted: formatSize(total),
+        percentUsed
+      };
     } catch (e) {
-      return { free: 0, total: 0 };
+      return { free: 0, total: 0, freeFormatted: '0 GB', totalFormatted: '0 GB', percentUsed: 0 };
     }
   },
 
   async checkPermissions(): Promise<boolean> {
-    const status = await Filesystem.checkPermissions();
-    if (status.publicStorage !== 'granted') {
-      const request = await Filesystem.requestPermissions();
-      return request.publicStorage === 'granted';
+    try {
+      const status = await Filesystem.checkPermissions();
+      if (status.publicStorage !== 'granted') {
+        const request = await Filesystem.requestPermissions();
+        return request.publicStorage === 'granted';
+      }
+      return true;
+    } catch (e) {
+      console.error('[FS] Permission check error:', e);
+      return false;
     }
-    return true;
   }
 };

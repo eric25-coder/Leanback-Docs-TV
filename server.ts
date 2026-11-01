@@ -2,28 +2,14 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 dotenv.config();
 
 // Support both ESM (dev) and CJS (bundled)
-const getPaths = () => {
-  try {
-    const filename = fileURLToPath(import.meta.url);
-    return {
-      filename,
-      dirname: path.dirname(filename)
-    };
-  } catch {
-    // In CJS bundle, __filename and __dirname are available
-    return {
-      filename: __filename,
-      dirname: __dirname
-    };
-  }
-};
-
-const { filename: __filename_res, dirname: __dirname_res } = getPaths();
+const isESM = typeof import.meta.url !== 'undefined';
+const __filename_res = isESM ? fileURLToPath(import.meta.url) : __filename;
+const __dirname_res = isESM ? path.dirname(__filename_res) : __dirname;
 
 async function startServer() {
   const app = express();
@@ -34,14 +20,7 @@ async function startServer() {
   console.log(`Starting Leanback Docs TV server in ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'} mode`);
 
   // Initialize Gemini AI SDK with correct pattern from gemini-api skill
-  const ai = new GoogleGenAI({
-    apiKey: process.env.GEMINI_API_KEY || '',
-    httpOptions: {
-      headers: {
-        'User-Agent': 'aistudio-build',
-      },
-    },
-  });
+  const ai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
   // API Routes using recommended patterns from gemini-api skill
   app.post('/api/gemini/summarize', async (req, res) => {
@@ -53,15 +32,15 @@ async function startServer() {
 
       const prompt = `Provide a structured summary of the following ${documentType.toUpperCase()} document titled "${documentTitle}". Include key takeaways, main sections or data points, and executive notes suitable for an Android TV viewer.\n\nContent:\n${typeof content === 'string' ? content.substring(0, 15000) : JSON.stringify(content).substring(0, 15000)}`;
 
-      const response = await ai.models.generateContent({
+      const model = ai.getGenerativeModel({ 
         model: 'gemini-1.5-flash',
-        contents: prompt,
-        config: {
-          systemInstruction: 'You are an expert AI document assistant for an Android TV productivity app. Provide clear, well-formatted summaries with bullet points.',
-        },
+        systemInstruction: 'You are an expert AI document assistant for an Android TV productivity app. Provide clear, well-formatted summaries with bullet points.',
       });
 
-      res.json({ summary: response.text || 'No summary generated.' });
+      const result = await model.generateContent(prompt);
+      const response = result.response;
+
+      res.json({ summary: response.text() || 'No summary generated.' });
     } catch (error: any) {
       console.error('Gemini summarize error:', error);
       res.status(500).json({ error: error.message || 'Failed to generate summary' });
@@ -77,15 +56,15 @@ async function startServer() {
 
       const prompt = `Based on the following ${documentType.toUpperCase()} document titled "${documentTitle}", answer the user's question clearly and concisely.\n\nDocument Content:\n${typeof content === 'string' ? content.substring(0, 15000) : JSON.stringify(content).substring(0, 15000)}\n\nQuestion: ${question}`;
 
-      const response = await ai.models.generateContent({
+      const model = ai.getGenerativeModel({ 
         model: 'gemini-1.5-flash',
-        contents: prompt,
-        config: {
-          systemInstruction: 'You are an intelligent document Q&A assistant optimized for Android TV display.',
-        },
+        systemInstruction: 'You are an intelligent document Q&A assistant optimized for Android TV display.',
       });
 
-      res.json({ answer: response.text || 'No answer generated.' });
+      const result = await model.generateContent(prompt);
+      const response = result.response;
+
+      res.json({ answer: response.text() || 'No answer generated.' });
     } catch (error: any) {
       console.error('Gemini QA error:', error);
       res.status(500).json({ error: error.message || 'Failed to answer question' });
@@ -112,15 +91,15 @@ async function startServer() {
         userPrompt = `Improve the following text:\n\n${text}`;
       }
 
-      const response = await ai.models.generateContent({
+      const model = ai.getGenerativeModel({ 
         model: 'gemini-1.5-flash',
-        contents: userPrompt,
-        config: {
-          systemInstruction: 'You are an expert AI writing assistant for text editing on Android TV.',
-        },
+        systemInstruction: 'You are an expert AI writing assistant for text editing on Android TV.',
       });
 
-      res.json({ result: response.text || text });
+      const result = await model.generateContent(userPrompt);
+      const response = result.response;
+
+      res.json({ result: response.text() || text });
     } catch (error: any) {
       console.error('Gemini edit assist error:', error);
       res.status(500).json({ error: error.message || 'Failed to process text' });
