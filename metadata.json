@@ -2,5 +2,6 @@
   "name": "Leanback Docs TV - Android TV Document Viewer & Editor",
   "description": "Android TV application to view PDF, Word, Excel, PowerPoint, and edit text files with a remote-friendly 10-foot UI and Gemini AI assistant.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"],
+  "icon": "public/assets/aistudio/Glossy_Leanback_Docs_TV_Icon_6ddbbc2f.png"
 }
