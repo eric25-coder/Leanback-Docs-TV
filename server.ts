@@ -3,6 +3,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import multer from 'multer';
+import fs from 'fs';
 
 dotenv.config();
 
@@ -10,6 +12,8 @@ dotenv.config();
 const isESM = typeof import.meta.url !== 'undefined';
 const __filename_res = isESM ? fileURLToPath(import.meta.url) : __filename;
 const __dirname_res = isESM ? path.dirname(__filename_res) : __dirname;
+
+const upload = multer({ dest: 'uploads/' });
 
 async function startServer() {
   const app = express();
@@ -19,10 +23,19 @@ async function startServer() {
   const isProduction = process.env.NODE_ENV === 'production';
   console.log(`Starting Leanback Docs TV server in ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'} mode`);
 
-  // Initialize Gemini AI SDK with correct pattern from gemini-api skill
+  // Initialize Gemini AI SDK
   const ai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
-  // API Routes using recommended patterns from gemini-api skill
+  // API Route for file uploads
+  app.post('/api/upload', upload.single('file'), (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+    // File is saved in 'uploads/' directory
+    res.json({ message: 'File received', filename: req.file.originalname });
+  });
+
+  // API Routes
   app.post('/api/gemini/summarize', async (req, res) => {
     try {
       const { documentTitle, documentType, content } = req.body;

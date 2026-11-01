@@ -12,6 +12,19 @@ export const ExcelViewerModal: React.FC<ExcelViewerModalProps> = ({ doc, onClose
   const content = doc.content as XlsxContent;
   const [activeSheetIdx, setActiveSheetIdx] = useState(0);
 
+  if (!content || !content.sheets || content.sheets.length === 0) {
+    return (
+      <div className="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center p-10 text-center">
+        <div className="max-w-md bg-emerald-900/20 border border-emerald-500/30 p-8 rounded-3xl">
+          <Table className="w-16 h-16 text-emerald-500 opacity-50 mx-auto mb-6" />
+          <h1 className="text-2xl font-bold text-emerald-400 mb-4">Spreadsheet Error</h1>
+          <p className="text-slate-400 mb-8">The Excel data could not be parsed or contains no sheets. Please verify the file integrity.</p>
+          <button onClick={onClose} className="px-8 py-4 bg-slate-800 hover:bg-slate-700 text-white rounded-2xl font-bold">Return to Library</button>
+        </div>
+      </div>
+    );
+  }
+
   const activeSheet = content.sheets[activeSheetIdx] || content.sheets[0];
 
   return (

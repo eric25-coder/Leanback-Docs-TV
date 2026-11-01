@@ -11,6 +11,19 @@ interface WordViewerModalProps {
 export const WordViewerModal: React.FC<WordViewerModalProps> = ({ doc, onClose, onOpenAi }) => {
   const content = doc.content as DocxContent;
 
+  if (!content || !content.paragraphs) {
+    return (
+      <div className="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center p-10 text-center">
+        <div className="max-w-md bg-red-900/20 border border-red-500/30 p-8 rounded-3xl">
+          <FileText className="w-16 h-16 text-red-500 opacity-50 mx-auto mb-6" />
+          <h1 className="text-2xl font-bold text-red-400 mb-4">Content Load Error</h1>
+          <p className="text-slate-400 mb-8">The Word document data could not be parsed or is empty. Please try again or check the file format.</p>
+          <button onClick={onClose} className="px-8 py-4 bg-slate-800 hover:bg-slate-700 text-white rounded-2xl font-bold">Return to Library</button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex flex-col text-white animate-in fade-in duration-200">
       {/* Top Toolbar */}

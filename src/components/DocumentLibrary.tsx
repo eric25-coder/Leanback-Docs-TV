@@ -36,6 +36,10 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newName, setNewName] = useState('');
+  
+  const [showFolderModal, setShowFolderModal] = useState(false);
+  const [folderName, setFolderName] = useState('');
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const filteredDocs = useMemo(() => {
     return documents
@@ -114,10 +118,7 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
           </div>
 
           <button 
-            onClick={() => {
-              const name = prompt('Enter folder name:');
-              if (name) onCreateFolder(name);
-            }} 
+            onClick={() => setShowFolderModal(true)} 
             className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-4 rounded-[20px] font-bold text-base border border-white/5 transition-all focus:ring-4 focus:ring-blue-500 active:scale-95 flex items-center gap-2"
           >
             <Folder className="w-5 h-5 text-purple-400" />
@@ -298,10 +299,7 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
                 </button>
 
                 <button 
-                  onClick={() => {
-                    const confirm = window.confirm(`Delete ${doc.title}?`);
-                    if (confirm) onDeleteDoc(doc.id);
-                  }}
+                  onClick={() => setDeleteConfirmId(doc.id)}
                   className="p-4 bg-slate-950/40 hover:bg-red-950/40 hover:text-red-400 text-slate-600 rounded-[18px] border border-white/5 transition-all focus:ring-2 focus:ring-red-500 group/delete"
                 >
                   <Trash2 className="w-4 h-4 group-hover/delete:animate-bounce" />
@@ -309,6 +307,66 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* 4. Custom Modals for Restricted UI */}
+      {showFolderModal && (
+        <div className="fixed inset-0 z-[100] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-6">
+          <div className="bg-slate-900 border border-white/10 rounded-[40px] p-10 max-w-lg w-full shadow-2xl">
+            <h3 className="text-2xl font-bold text-white mb-6">Create New Folder</h3>
+            <input 
+              autoFocus
+              type="text"
+              value={folderName}
+              onChange={(e) => setFolderName(e.target.value)}
+              placeholder="Folder name..."
+              className="w-full bg-slate-950 border border-white/10 rounded-2xl p-4 text-white mb-8 outline-none focus:ring-4 focus:ring-blue-500"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  if (folderName) onCreateFolder(folderName);
+                  setShowFolderModal(false);
+                  setFolderName('');
+                }
+                if (e.key === 'Escape') setShowFolderModal(false);
+              }}
+            />
+            <div className="flex gap-4">
+               <button onClick={() => setShowFolderModal(false)} className="flex-1 py-4 bg-slate-800 text-white rounded-xl font-bold">Cancel</button>
+               <button 
+                 onClick={() => {
+                   if (folderName) onCreateFolder(folderName);
+                   setShowFolderModal(false);
+                   setFolderName('');
+                 }}
+                 className="flex-1 py-4 bg-blue-600 text-white rounded-xl font-bold"
+               >
+                 Create
+               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteConfirmId && (
+        <div className="fixed inset-0 z-[100] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-6">
+          <div className="bg-slate-900 border border-white/10 rounded-[40px] p-10 max-w-lg w-full text-center shadow-2xl">
+            <Trash2 className="w-16 h-16 text-red-500 mx-auto mb-6 opacity-50" />
+            <h3 className="text-2xl font-bold text-white mb-4">Delete Document?</h3>
+            <p className="text-slate-400 mb-10">This action cannot be undone. Are you sure you want to remove this file?</p>
+            <div className="flex gap-4">
+               <button onClick={() => setDeleteConfirmId(null)} className="flex-1 py-4 bg-slate-800 text-white rounded-xl font-bold">Keep File</button>
+               <button 
+                 onClick={() => {
+                   onDeleteDoc(deleteConfirmId);
+                   setDeleteConfirmId(null);
+                 }}
+                 className="flex-1 py-4 bg-red-600 text-white rounded-xl font-bold"
+               >
+                 Confirm Delete
+               </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

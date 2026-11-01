@@ -83,7 +83,8 @@ export type ActiveModal =
   | { type: 'convert' }
   | { type: 'new_note'; noteId?: string }
   | { type: 'tv_storage' }
-  | { type: 'nas_setup' };
+  | { type: 'nas_setup' }
+  | { type: 'transfer' };
 
 export interface StorageInfo {
   free: number;

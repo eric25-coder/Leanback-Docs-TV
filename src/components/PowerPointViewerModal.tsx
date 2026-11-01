@@ -11,6 +11,19 @@ interface PowerPointViewerModalProps {
 export const PowerPointViewerModal: React.FC<PowerPointViewerModalProps> = ({ doc, onClose, onOpenAi }) => {
   const content = doc.content as PptxContent;
   const [currentSlideIdx, setCurrentSlideIdx] = useState(0);
+
+  if (!content || !content.slides || content.slides.length === 0) {
+    return (
+      <div className="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center p-10 text-center">
+        <div className="max-w-md bg-amber-900/20 border border-amber-500/30 p-8 rounded-3xl">
+          <Presentation className="w-16 h-16 text-amber-500 opacity-50 mx-auto mb-6" />
+          <h1 className="text-2xl font-bold text-amber-400 mb-4">Presentation Error</h1>
+          <p className="text-slate-400 mb-8">The PowerPoint presentation could not be loaded or is empty. Please verify the file format.</p>
+          <button onClick={onClose} className="px-8 py-4 bg-slate-800 hover:bg-slate-700 text-white rounded-2xl font-bold">Return to Library</button>
+        </div>
+      </div>
+    );
+  }
   const [showNotes, setShowNotes] = useState(true);
 
   const slide = content.slides[currentSlideIdx] || content.slides[0] || { slideNumber: 1, title: 'No Content', bullets: [], notes: '' };

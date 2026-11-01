@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Capacitor } from '@capacitor/core';
+import { App as CapApp } from '@capacitor/app';
 import { FilePicker } from '@capawesome/capacitor-file-picker';
 import { Directory } from '@capacitor/filesystem';
 import { DocumentItem, ActiveModal, DocumentType, UserNote, AppSettings, NetworkConnection, RecentFile } from './types';
@@ -17,7 +18,7 @@ import { AiAssistantModal } from './components/AiAssistantModal';
 import { SettingsModal } from './components/SettingsModal';
 import { NewNoteModal } from './components/NewNoteModal';
 import { RemoteSimulator } from './components/RemoteSimulator';
-import { ConversionModal } from './components/ConversionModal';
+import { TransferModal } from './components/TransferModal';
 import { NasSetupModal } from './components/NasSetupModal';
 import { Info, Tv } from 'lucide-react';
 
@@ -398,8 +399,12 @@ export default function App() {
 
       <div className="flex-1 flex overflow-hidden">
         <Sidebar activeTab={activeTab} onTabChange={(tab) => {
-          setActiveTab(tab);
-          if (tab === 'home') setActiveModal({ type: 'library' });
+          if (tab === 'transfer') {
+            setActiveModal({ type: 'transfer' });
+          } else {
+            setActiveTab(tab);
+            if (tab === 'home') setActiveModal({ type: 'library' });
+          }
         }} />
 
         <main className="flex-1 flex flex-col relative">
@@ -517,7 +522,7 @@ export default function App() {
                 Stay
               </button>
               <button 
-                onClick={() => (window as any).App?.exitApp ? (window as any).App.exitApp() : window.close()}
+                onClick={() => CapApp.exitApp()}
                 className="flex-1 py-5 bg-red-600 hover:bg-red-500 text-white rounded-2xl font-bold transition-all focus:ring-4 focus:ring-white shadow-lg shadow-red-500/20 outline-none"
               >
                 Exit App
@@ -543,6 +548,10 @@ export default function App() {
             setActiveModal({ type: 'library' });
           }}
         />
+      )}
+
+      {activeModal.type === 'transfer' && (
+        <TransferModal onClose={() => setActiveModal({ type: 'library' })} />
       )}
     </div>
   );
