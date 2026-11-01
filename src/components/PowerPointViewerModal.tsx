@@ -13,7 +13,17 @@ export const PowerPointViewerModal: React.FC<PowerPointViewerModalProps> = ({ do
   const [currentSlideIdx, setCurrentSlideIdx] = useState(0);
   const [showNotes, setShowNotes] = useState(true);
 
-  const slide = content.slides[currentSlideIdx] || content.slides[0];
+  const slide = content.slides[currentSlideIdx] || content.slides[0] || { slideNumber: 1, title: 'No Content', bullets: [], notes: '' };
+
+  // Remote D-pad support for slides
+  React.useEffect(() => {
+    const handleKeys = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') setCurrentSlideIdx(i => Math.max(0, i - 1));
+      if (e.key === 'ArrowRight') setCurrentSlideIdx(i => Math.min(content.slides.length - 1, i + 1));
+    };
+    window.addEventListener('keydown', handleKeys);
+    return () => window.removeEventListener('keydown', handleKeys);
+  }, [content.slides.length]);
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex flex-col text-white animate-in fade-in duration-200">
@@ -70,7 +80,7 @@ export const PowerPointViewerModal: React.FC<PowerPointViewerModalProps> = ({ do
               {slide.title}
             </h1>
             <ul className="space-y-3">
-              {slide.bullets.map((bullet, idx) => (
+              {(slide.bullets || []).map((bullet: string, idx: number) => (
                 <li key={idx} className="flex items-start gap-3 text-lg text-slate-200">
                   <span className="w-2.5 h-2.5 rounded-full bg-amber-400 mt-2 shrink-0 shadow-lg shadow-amber-400/50" />
                   <span>{bullet}</span>
@@ -98,23 +108,23 @@ export const PowerPointViewerModal: React.FC<PowerPointViewerModalProps> = ({ do
         <button
           onClick={() => setCurrentSlideIdx((i) => Math.max(0, i - 1))}
           disabled={currentSlideIdx === 0}
-          className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl text-xs font-semibold flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="px-8 py-4 bg-slate-800 hover:bg-slate-700 disabled:opacity-20 rounded-[20px] text-sm font-bold flex items-center gap-3 transition-all outline-none focus-visible:ring-4 focus-visible:ring-blue-500"
         >
-          <ChevronLeft className="w-4 h-4" />
+          <ChevronLeft className="w-5 h-5" />
           <span>Previous Slide</span>
         </button>
 
-        <span className="text-sm font-medium text-slate-300">
-          Slide {currentSlideIdx + 1} of {content.slides.length}
+        <span className="text-lg font-bold text-slate-300 tabular-nums">
+          Slide <span className="text-white">{currentSlideIdx + 1}</span> of {content.slides.length}
         </span>
 
         <button
           onClick={() => setCurrentSlideIdx((i) => Math.min(content.slides.length - 1, i + 1))}
           disabled={currentSlideIdx === content.slides.length - 1}
-          className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl text-xs font-semibold flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="px-8 py-4 bg-slate-800 hover:bg-slate-700 disabled:opacity-20 rounded-[20px] text-sm font-bold flex items-center gap-3 transition-all outline-none focus-visible:ring-4 focus-visible:ring-blue-500"
         >
           <span>Next Slide</span>
-          <ChevronRight className="w-4 h-4" />
+          <ChevronRight className="w-5 h-5" />
         </button>
       </div>
     </div>

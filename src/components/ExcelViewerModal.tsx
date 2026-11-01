@@ -50,10 +50,9 @@ export const ExcelViewerModal: React.FC<ExcelViewerModalProps> = ({ doc, onClose
           <button
             key={sheet.sheetName}
             onClick={() => setActiveSheetIdx(idx)}
-            className={`px-4 py-2 text-xs font-semibold rounded-xl transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              activeSheetIdx === idx ? 'bg-emerald-600 text-white shadow-md' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+            className={`px-6 py-3 text-sm font-bold rounded-2xl transition-all outline-none focus-visible:ring-4 focus-visible:ring-blue-500 ${
+              activeSheetIdx === idx ? 'bg-emerald-600 text-white shadow-lg' : 'bg-slate-800 text-slate-400 hover:text-white'
             }`}
-            style={{ backgroundColor: activeSheetIdx === idx ? '#059669' : undefined }}
           >
             📊 {sheet.sheetName}
           </button>
@@ -73,7 +72,7 @@ export const ExcelViewerModal: React.FC<ExcelViewerModalProps> = ({ doc, onClose
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-700">
                   <th className="p-4 w-12 text-center text-slate-400 border-r border-slate-200">#</th>
-                  {activeSheet.rows[0]?.map((header, hIdx) => (
+                  {(activeSheet.rows[0] as any[])?.map((header: any, hIdx: number) => (
                     <th key={hIdx} className="p-4 border-r border-slate-200 font-semibold tracking-wide">
                       {header}
                     </th>
@@ -81,12 +80,12 @@ export const ExcelViewerModal: React.FC<ExcelViewerModalProps> = ({ doc, onClose
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 text-sm font-sans">
-                {activeSheet.rows.slice(1).map((row, rIdx) => (
+                {activeSheet.rows.slice(1).map((row: any[], rIdx: number) => (
                   <tr key={rIdx} className="hover:bg-slate-50 transition-colors">
                     <td className="p-4 text-center text-xs font-mono text-slate-400 border-r border-slate-200 bg-slate-50/50">
                       {rIdx + 1}
                     </td>
-                    {row.map((cell, cIdx) => (
+                    {row.map((cell: any, cIdx: number) => (
                       <td key={cIdx} className="p-4 border-r border-slate-200 text-slate-800 font-medium tabular-nums">
                         {cell}
                       </td>

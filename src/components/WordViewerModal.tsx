@@ -50,7 +50,7 @@ export const WordViewerModal: React.FC<WordViewerModalProps> = ({ doc, onClose, 
           </div>
 
           <div className="space-y-6">
-            {content.paragraphs.map((p) => {
+            {content.paragraphs.map((p: { id: string, type: string, text: string }) => {
               if (p.type === 'heading') {
                 return (
                   <h3 key={p.id} className="text-2xl font-bold text-slate-900 mt-6 mb-3 tracking-tight">

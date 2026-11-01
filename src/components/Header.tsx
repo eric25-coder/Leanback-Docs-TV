@@ -1,93 +1,84 @@
-import React from 'react';
-import { Tv, Sliders, Plus, Sparkles, Radio } from 'lucide-react';
-import { ActiveModal } from '../types';
+import React, { useState, useEffect } from 'react';
+import { Tv, Wifi, WifiOff, Radio, Settings, Gamepad2 } from 'lucide-react';
 
 interface HeaderProps {
-  activeModal: ActiveModal;
-  setActiveModal: (modal: ActiveModal) => void;
-  onNewDocClick: () => void;
+  onRemoteClick: () => void;
+  onSettingsClick: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
-  activeModal,
-  setActiveModal,
-  onNewDocClick,
+  onRemoteClick,
+  onSettingsClick,
 }) => {
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   return (
-    <header className="flex items-center justify-between gap-8 px-8 py-5 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 text-white sticky top-0 z-40 shadow-xl">
-      {/* Zone 1: Brand Wordmark */}
-      <div 
-        className="flex items-center gap-3 cursor-pointer group"
-        onClick={() => setActiveModal({ type: 'library' })}
-      >
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
-          <Tv className="w-5 h-5 text-white" />
+    <header className="flex items-center justify-between px-10 py-8 bg-transparent z-40 relative">
+      {/* Left: Branding */}
+      <div className="flex items-center gap-6">
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-[0_0_30px_rgba(37,99,235,0.3)] border border-white/20">
+          <Tv className="w-10 h-10 text-white drop-shadow-lg" />
         </div>
         <div>
-          <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
-            Leanback Docs TV
-          </span>
-          <span className="block text-[10px] text-blue-400 font-mono tracking-widest uppercase">
-            Android TV v2.4 (Auto Storage)
-          </span>
+          <h1 className="text-4xl font-extrabold tracking-tight text-white flex items-center gap-3 font-display">
+            Leanback <span className="text-blue-400">Docs TV</span>
+          </h1>
+          <div className="flex items-center gap-3 mt-1">
+            <span className="text-sm font-medium text-slate-400 uppercase tracking-widest font-mono">Build 2.4</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-600" />
+            <span className="text-sm font-medium text-slate-400">Smart Document Ecosystem</span>
+          </div>
         </div>
       </div>
 
-      {/* Zone 2: Navigation Links */}
-      <nav className="hidden lg:flex items-center gap-6 text-sm font-medium text-slate-300">
-        <button
-          onClick={() => setActiveModal({ type: 'library' })}
-          className={`hover:text-white transition-colors py-1 px-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-            activeModal.type === 'library' ? 'bg-slate-800 text-white font-semibold' : ''
-          }`}
-        >
-          Document Library
-        </button>
-        <button
-          onClick={() => setActiveModal({ type: 'convert' } as any)}
-          className={`hover:text-white transition-colors py-1 px-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center gap-1.5 ${
-            (activeModal as any).type === 'convert' ? 'bg-slate-800 text-white font-semibold' : ''
-          }`}
-        >
-          <Sparkles className="w-4 h-4 text-purple-400" />
-          Convert Format
-        </button>
-        <button
-          onClick={() => setActiveModal({ type: 'remote' })}
-          className={`hover:text-white transition-colors py-1 px-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center gap-1.5 ${
-            activeModal.type === 'remote' ? 'bg-slate-800 text-white font-semibold' : ''
-          }`}
-        >
-          <Radio className="w-4 h-4 text-emerald-400 animate-pulse" />
-          Virtual Remote
-        </button>
-        <button
-          onClick={() => setActiveModal({ type: 'settings' })}
-          className={`hover:text-white transition-colors py-1 px-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-            activeModal.type === 'settings' ? 'bg-slate-800 text-white font-semibold' : ''
-          }`}
-        >
-          TV Settings
-        </button>
-      </nav>
+      {/* Right: Status & Actions */}
+      <div className="flex items-center gap-6">
+        {/* Connected Badge */}
+        <div className={`flex items-center gap-4 px-6 py-3 rounded-full border border-white/5 shadow-inner transition-colors ${isOnline ? 'bg-slate-900/60' : 'bg-red-950/20'}`}>
+          <div className="relative">
+            {isOnline ? (
+              <Wifi className="w-6 h-6 text-emerald-400" />
+            ) : (
+              <WifiOff className="w-6 h-6 text-red-500" />
+            )}
+            {isOnline && <div className="absolute inset-0 bg-emerald-400/20 blur-lg animate-pulse" />}
+          </div>
+          <div className="text-left">
+            <p className={`text-[13px] font-bold leading-none ${isOnline ? 'text-emerald-400' : 'text-red-500'}`}>
+              {isOnline ? 'Connected' : 'Offline Mode'}
+            </p>
+            <p className="text-[10px] text-slate-500 font-medium uppercase tracking-tighter">
+              {isOnline ? 'Cloud AI Ready' : 'Local Access Only'}
+            </p>
+          </div>
+        </div>
 
-      {/* Zone 3: Primary Action & Quick Tools */}
-      <div className="flex items-center gap-3 shrink-0">
-        <button
-          onClick={() => setActiveModal({ type: 'remote' })}
-          className="px-3.5 py-2 text-xs font-semibold text-slate-200 bg-slate-800 hover:bg-slate-700 rounded-xl transition-all border border-slate-700/80 flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
-          title="Open Virtual Remote Control"
+        {/* Remote Pad Button */}
+        <button 
+          onClick={onRemoteClick}
+          className="flex items-center gap-3 bg-slate-800/80 hover:bg-blue-600 transition-all duration-300 px-6 py-3 rounded-2xl border border-white/10 group focus:ring-4 focus:ring-blue-500 focus:outline-none"
         >
-          <Radio className="w-4 h-4 text-emerald-400" />
-          <span className="hidden sm:inline">Remote Pad</span>
+          <Gamepad2 className="w-6 h-6 text-slate-300 group-hover:text-white transition-colors" />
+          <span className="text-base font-bold text-white whitespace-nowrap">Remote Pad</span>
         </button>
 
-        <button
-          onClick={onNewDocClick}
-          className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-xl transition-all shadow-lg shadow-blue-600/30 flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-white"
+        {/* Settings Circle */}
+        <button 
+          onClick={onSettingsClick}
+          className="w-14 h-14 rounded-2xl bg-blue-900/40 hover:bg-blue-800/60 flex items-center justify-center border border-white/10 transition-all focus:ring-4 focus:ring-blue-500 focus:outline-none"
         >
-          <Plus className="w-4 h-4" />
-          <span>New Note</span>
+          <Settings className="w-7 h-7 text-slate-300" />
         </button>
       </div>
     </header>

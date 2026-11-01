@@ -90,7 +90,7 @@ export const TextEditorModal: React.FC<TextEditorModalProps> = ({ doc, onClose, 
       </div>
 
       {/* AI Assist Toolbar */}
-      <div className="bg-slate-900/60 px-8 py-3 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4">
+      <div className="ai-toolbar bg-slate-900/60 px-8 py-3 border-b border-white/5 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold text-purple-400 uppercase tracking-wider flex items-center gap-1.5">
             <Sparkles className="w-4 h-4" /> Gemini AI Assist:
@@ -136,7 +136,17 @@ export const TextEditorModal: React.FC<TextEditorModalProps> = ({ doc, onClose, 
           <textarea
             value={textValue}
             onChange={(e) => setTextValue(e.target.value)}
-            className="flex-1 bg-transparent p-6 text-slate-100 font-mono text-sm leading-relaxed resize-none focus:outline-none focus:ring-0"
+            onKeyDown={(e) => {
+              // Pressing Escape or Backspace on TV should ideally exit edit mode 
+              // but standard browser behavior on textarea might intercept.
+              // We rely on the global App.tsx listener for Back.
+              if (e.key === 'ArrowUp' && (e.target as HTMLTextAreaElement).selectionStart === 0) {
+                 // Try to focus the last button in the AI toolbar
+                 const lastAiBtn = document.querySelector('.ai-toolbar button:last-child');
+                 if (lastAiBtn instanceof HTMLElement) lastAiBtn.focus();
+              }
+            }}
+            className="flex-1 bg-transparent p-10 text-slate-100 font-mono text-xl leading-relaxed resize-none outline-none focus:ring-0 custom-scrollbar"
             placeholder="Type your document content or use remote input..."
             rows={20}
           />

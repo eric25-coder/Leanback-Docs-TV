@@ -1,95 +1,86 @@
 import React, { useState } from 'react';
-import { Plus, FileText, ArrowLeft } from 'lucide-react';
-import { DocumentItem } from '../types';
+import { Plus, X, Save, Edit3, Type, ArrowLeft } from 'lucide-react';
 
 interface NewNoteModalProps {
   onClose: () => void;
-  onAddDoc: (doc: DocumentItem) => void;
+  onAddDoc: (title: string, content: string) => void;
 }
 
 export const NewNoteModal: React.FC<NewNoteModalProps> = ({ onClose, onAddDoc }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim()) return;
-
-    const newDoc: DocumentItem = {
-      id: `doc-${Date.now()}`,
-      title: title.endsWith('.txt') ? title : `${title}.txt`,
-      type: 'txt',
-      size: '2 KB',
-      updatedAt: new Date().toISOString().split('T')[0],
-      author: 'TV User',
-      tags: ['Notes', 'Scratchpad'],
-      isEditable: true,
-      content: content || 'New scratchpad note created on Android TV.',
-    };
-
-    onAddDoc(newDoc);
-    onClose();
+  const handleSave = () => {
+    if (title.trim() && content.trim()) {
+      onAddDoc(title, content);
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex flex-col text-white animate-in fade-in duration-200">
-      <div className="flex items-center justify-between px-8 py-4 bg-slate-900 border-b border-slate-800 shadow-lg">
-        <div className="flex items-center gap-4">
+    <div className="fixed inset-0 z-[60] bg-slate-950 flex flex-col animate-in slide-in-from-bottom duration-300">
+      {/* Premium Header */}
+      <header className="flex items-center justify-between px-10 py-8 border-b border-white/5 bg-slate-900/50 backdrop-blur-xl">
+        <div className="flex items-center gap-6">
           <button
             onClick={onClose}
-            className="p-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 hover:text-white transition-colors flex items-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="p-3 bg-slate-800 hover:bg-slate-700 rounded-2xl transition-all focus:ring-4 focus:ring-blue-500"
           >
-            <ArrowLeft className="w-5 h-5" />
-            <span className="text-xs font-semibold">Cancel</span>
+            <ArrowLeft className="w-6 h-6" />
           </button>
           <div>
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <Plus className="w-5 h-5 text-emerald-400" />
-              Create New Text Note
+            <h2 className="text-3xl font-extrabold text-white flex items-center gap-3">
+              <Plus className="text-blue-400 w-8 h-8" /> Create New Note
             </h2>
-            <p className="text-xs text-slate-400">Fully Editable Text File for Android TV</p>
+            <p className="text-sm text-slate-500 uppercase tracking-[0.2em] font-mono mt-1">TV Document Workspace</p>
           </div>
         </div>
-      </div>
 
-      <div className="flex-1 overflow-y-auto p-12 max-w-2xl mx-auto w-full">
-        <form onSubmit={handleSubmit} className="bg-slate-900 border border-slate-800 rounded-3xl p-8 space-y-6 shadow-2xl">
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-              Note Title
-            </label>
-            <input
-              type="text"
-              required
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Living Room Meeting Ideas"
-              className="w-full bg-slate-950 border border-slate-700 rounded-2xl px-5 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+        <button
+          onClick={handleSave}
+          disabled={!title.trim() || !content.trim()}
+          className="px-10 py-5 bg-blue-600 hover:bg-blue-500 disabled:opacity-30 disabled:grayscale text-white rounded-[24px] font-extrabold text-lg shadow-2xl shadow-blue-500/30 flex items-center gap-3 transition-all focus:ring-4 focus:ring-white active:scale-95"
+        >
+          <Save className="w-6 h-6" />
+          <span>Save Document</span>
+        </button>
+      </header>
 
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-              Note Content
-            </label>
-            <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Type your notes here..."
-              rows={8}
-              className="w-full bg-slate-950 border border-slate-700 rounded-2xl p-5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono resize-none"
-            />
-          </div>
+      {/* Workspace Area */}
+      <main className="flex-1 flex flex-col p-10 max-w-6xl mx-auto w-full space-y-8">
+        <div className="space-y-4">
+          <label className="flex items-center gap-3 text-xs font-black text-slate-600 uppercase tracking-widest px-4">
+            <Type className="w-4 h-4" /> Document Title
+          </label>
+          <input
+            autoFocus
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Enter a descriptive title for your note..."
+            className="w-full bg-slate-900/50 border border-white/5 rounded-[32px] px-10 py-8 text-4xl font-extrabold text-white focus:outline-none focus:ring-4 focus:ring-blue-500 transition-all placeholder:text-slate-800"
+          />
+        </div>
 
-          <button
-            type="submit"
-            className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl text-sm font-semibold shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-white transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Save & Open Note</span>
-          </button>
-        </form>
-      </div>
+        <div className="flex-1 flex flex-col space-y-4">
+          <label className="flex items-center gap-3 text-xs font-black text-slate-600 uppercase tracking-widest px-4">
+            <Edit3 className="w-4 h-4" /> Content Body
+          </label>
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="Start typing your thoughts here... Optimized for remote keyboard input."
+            className="flex-1 w-full bg-slate-900/50 border border-white/5 rounded-[40px] px-10 py-10 text-xl leading-relaxed text-slate-200 focus:outline-none focus:ring-4 focus:ring-blue-500 transition-all placeholder:text-slate-800 resize-none custom-scrollbar"
+          />
+        </div>
+      </main>
+
+      {/* Keyboard Shortcuts Hint */}
+      <footer className="px-10 py-6 border-t border-white/5 bg-slate-900/20 text-center">
+         <p className="text-xs font-bold text-slate-600 uppercase tracking-widest flex items-center justify-center gap-6">
+            <span className="flex items-center gap-2"><span className="px-2 py-1 bg-slate-800 rounded border border-white/5">BACK</span> To Cancel</span>
+            <span className="flex items-center gap-2"><span className="px-2 py-1 bg-slate-800 rounded border border-white/5">ENTER</span> To Focus Text</span>
+         </p>
+      </footer>
     </div>
   );
 };

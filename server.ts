@@ -13,7 +13,11 @@ async function startServer() {
   const app = express();
   app.use(express.json({ limit: '50mb' }));
 
-  // Initialize Gemini AI SDK
+  // Log startup mode
+  const isProduction = process.env.NODE_ENV === 'production';
+  console.log(`Starting Leanback Docs TV server in ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'} mode`);
+
+  // Initialize Gemini AI SDK with correct pattern from gemini-api skill
   const ai = new GoogleGenAI({
     apiKey: process.env.GEMINI_API_KEY || '',
     httpOptions: {
@@ -23,7 +27,7 @@ async function startServer() {
     },
   });
 
-  // API Routes
+  // API Routes using recommended patterns from gemini-api skill
   app.post('/api/gemini/summarize', async (req, res) => {
     try {
       const { documentTitle, documentType, content } = req.body;
@@ -79,9 +83,7 @@ async function startServer() {
         return res.status(400).json({ error: 'Text content is required' });
       }
 
-      let systemPrompt = 'You are an expert AI writing assistant for text editing on Android TV.';
       let userPrompt = '';
-
       if (action === 'proofread') {
         userPrompt = `Proofread and fix grammar/spelling in the following text, keeping the original tone and format:\n\n${text}`;
       } else if (action === 'expand') {
@@ -98,7 +100,7 @@ async function startServer() {
         model: 'gemini-3.8-flash',
         contents: userPrompt,
         config: {
-          systemInstruction: systemPrompt,
+          systemInstruction: 'You are an expert AI writing assistant for text editing on Android TV.',
         },
       });
 
@@ -110,7 +112,6 @@ async function startServer() {
   });
 
   // Vite middleware setup
-  const isProduction = process.env.NODE_ENV === 'production';
   if (!isProduction) {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
@@ -119,7 +120,9 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    // In production, server.js is inside dist/ along with the assets
+    // In production, server.js is inside dist/ along with assets
+    // Since __dirname is dist/, we serve from there
+    console.log(`Serving static assets from: ${__dirname}`);
     app.use(express.static(__dirname));
     app.get('*', (req, res) => {
       res.sendFile(path.join(__dirname, 'index.html'));
@@ -132,4 +135,7 @@ async function startServer() {
   });
 }
 
-startServer();
+startServer().catch((err) => {
+  console.error('CRITICAL: Failed to start server:', err);
+  process.exit(1);
+});

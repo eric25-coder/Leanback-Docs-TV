@@ -1,1 +1,45 @@
 @import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui;
+  --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui;
+}
+
+@layer base {
+  body {
+    @apply bg-slate-950 text-slate-100 antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Professional Android TV Focus Indicator */
+  *:focus-visible {
+    outline: none !important;
+    @apply ring-4 ring-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.6)] z-50;
+    transform: scale(1.03);
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  /* Disable scaling for inputs/textareas to prevent text blurring */
+  input:focus-visible, textarea:focus-visible {
+    transform: none;
+  }
+
+  /* Custom Scrollbar for TV (Less intrusive) */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-white/10 rounded-full;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-white/20;
+  }
+}
+

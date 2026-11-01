@@ -55,6 +55,8 @@ export const ConversionModal: React.FC<ConversionModalProps> = ({
         tags: ['Converted', targetFormat.toUpperCase()],
         isEditable: ['txt', 'md', 'json', 'csv', 'docx'].includes(targetFormat),
         content: selectedDoc.content,
+        path: selectedDoc.path,
+        source: selectedDoc.source,
       };
 
       setSuccessMessage(`Successfully converted to .${targetFormat.toUpperCase()}! Added to library.`);
