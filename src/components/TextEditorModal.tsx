@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { DocumentItem } from '../types';
 import { FileCode, Save, Sparkles, ArrowLeft, Check, RefreshCw } from 'lucide-react';
+import { getApiUrl } from '../utils/api';
 
 interface TextEditorModalProps {
   doc: DocumentItem;
@@ -31,7 +32,7 @@ export const TextEditorModal: React.FC<TextEditorModalProps> = ({ doc, onClose, 
     setAiLoading(true);
     setAiError('');
     try {
-      const response = await fetch('/api/gemini/edit-assist', {
+      const response = await fetch(getApiUrl('/api/gemini/edit-assist'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: textValue, action }),

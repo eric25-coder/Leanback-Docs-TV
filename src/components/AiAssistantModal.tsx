@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { DocumentItem } from '../types';
 import { Sparkles, Send, ArrowLeft, Bot, User, RefreshCw } from 'lucide-react';
+import { getApiUrl } from '../utils/api';
 
 interface AiAssistantModalProps {
   doc: DocumentItem;
@@ -27,7 +28,7 @@ export const AiAssistantModal: React.FC<AiAssistantModalProps> = ({ doc, onClose
     setLoading(true);
 
     try {
-      const response = await fetch('/api/gemini/qa', {
+      const response = await fetch(getApiUrl('/api/gemini/qa'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

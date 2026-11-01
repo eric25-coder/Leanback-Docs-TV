@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { FilePicker } from '@capawesome/capacitor-file-picker';
 import { INITIAL_DOCUMENTS } from './sampleDocs';
-import { DocumentItem, ActiveModal } from './types';
+import { DocumentItem, ActiveModal, DocumentType } from './types';
 import { Header } from './components/Header';
 import { DocumentLibrary } from './components/DocumentLibrary';
 import { PdfViewerModal } from './components/PdfViewerModal';
@@ -36,18 +38,63 @@ export default function App() {
     localStorage.setItem('leanback_docs_tv_final_v1', JSON.stringify(documents));
   }, [documents]);
 
+  const handleAddDocument = useCallback((newDoc: DocumentItem) => {
+    setDocuments((prev) => [newDoc, ...prev]);
+    setActiveModal({ type: 'library' });
+  }, []);
+
+  const handleNativeFilePick = async () => {
+    try {
+      const result = await FilePicker.pickFiles({
+        readData: true,
+      });
+
+      if (result.files.length > 0) {
+        const file = result.files[0];
+        const ext = file.name.split('.').pop()?.toLowerCase() as DocumentType || 'txt';
+        
+        // Map native file to DocumentItem
+        const newDoc: DocumentItem = {
+          id: `native-${Date.now()}`,
+          title: file.name,
+          type: ext,
+          size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
+          updatedAt: new Date().toISOString().split('T')[0],
+          author: 'Native Storage',
+          tags: ['Native', ext.toUpperCase()],
+          isEditable: ['txt', 'md', 'json', 'csv'].includes(ext),
+          content: file.data || `Content of ${file.name} (Native Access)`,
+        };
+
+        // For complex types, we might need more parsing logic if binary
+        // but for this MVP, we treat data as string if possible.
+        handleAddDocument(newDoc);
+        setActiveModal({ type: 'viewer', docId: newDoc.id });
+      }
+    } catch (err) {
+      console.error('File pick error:', err);
+    }
+  };
+
   // Global D-Pad Keyboard Listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setActiveModal({ type: 'library' });
+      // Android TV D-Pad and standard remote keys
+      if (e.key === 'Escape' || e.key === 'Backspace') {
+        // Only go back if we are in a modal
+        if (activeModal.type !== 'library') {
+          e.preventDefault();
+          setActiveModal({ type: 'library' });
+        }
       } else if (e.key === 'h' || e.key === 'H') {
         setActiveModal({ type: 'library' });
+      } else if (e.key === 'Enter') {
+        // Usually handled by focused element, but can be used for global actions
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [activeModal]);
 
   const handleSelectDoc = (id: string, mode: 'view' | 'edit') => {
     const doc = documents.find((d) => d.id === id);
@@ -79,11 +126,6 @@ export default function App() {
     );
   };
 
-  const handleAddDocument = (newDoc: DocumentItem) => {
-    setDocuments((prev) => [newDoc, ...prev]);
-    setActiveModal({ type: 'library' });
-  };
-
   const activeDoc =
     activeModal.type === 'viewer' || activeModal.type === 'editor' || activeModal.type === 'ai_copilot'
       ? documents.find((d) => d.id === activeModal.docId)
@@ -105,6 +147,19 @@ export default function App() {
           onSelectDoc={handleSelectDoc}
           onNewDocClick={() => setActiveModal({ type: 'new_note' } as any)}
         />
+      )}
+
+      {/* Floating Action Button for Native Storage Access (Android TV specific UI feel) */}
+      {activeModal.type === 'library' && (
+        <button
+          onClick={handleNativeFilePick}
+          className="fixed bottom-10 right-10 w-16 h-16 bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-2xl flex items-center justify-center transition-transform active:scale-95 focus:ring-4 focus:ring-white z-50 group"
+          title="Access Native Storage (SAF)"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+          </svg>
+        </button>
       )}
 
       {/* Viewers & Editors */}
@@ -190,6 +245,7 @@ export default function App() {
           <RemoteSimulator
             onDirection={(dir) => {
               console.log('D-pad directional press:', dir);
+              // In a real TV app, this would focus adjacent elements
             }}
             onSelect={() => {
               console.log('D-pad OK / Select press');

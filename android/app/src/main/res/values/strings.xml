@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Leanback Docs TV</string>
+    <string name="title_activity_main">Leanback Docs TV</string>
+    <string name="package_name">com.erico.leanbackdocstv</string>
+    <string name="custom_url_scheme">com.erico.leanbackdocstv</string>
+</resources>
