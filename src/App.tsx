@@ -36,26 +36,38 @@ export default function App() {
   const [activeModal, setActiveModal] = useState<ActiveModal>({ type: 'library' });
   const [activeTab, setActiveTab] = useState<string>('home');
   const [isLoading, setIsLoading] = useState(true);
+  const [initError, setInitError] = useState<string | null>(null);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   // Load Initial Data
   useEffect(() => {
     const init = async () => {
-      const [savedSettings, savedRecent, savedNotes, savedNas] = await Promise.all([
-        db.getSettings(),
-        db.getRecentFiles(),
-        db.getNotes(),
-        db.getNasConnections()
-      ]);
-      setSettings(savedSettings);
-      setRecentFiles(savedRecent);
-      setNotes(savedNotes);
-      setNasConnections(savedNas);
-      
-      // Initial File Scan
-      await fs.checkPermissions();
-      await refreshFiles();
-      setIsLoading(false);
+      try {
+        const [savedSettings, savedRecent, savedNotes, savedNas] = await Promise.all([
+          db.getSettings().catch(e => { console.error('Settings load fail:', e); return null; }),
+          db.getRecentFiles().catch(e => { console.error('Recent files load fail:', e); return []; }),
+          db.getNotes().catch(e => { console.error('Notes load fail:', e); return []; }),
+          db.getNasConnections().catch(e => { console.error('NAS load fail:', e); return []; })
+        ]);
+
+        if (savedSettings) setSettings(savedSettings);
+        setRecentFiles(savedRecent);
+        setNotes(savedNotes);
+        setNasConnections(savedNas);
+        
+        // Initial File Scan
+        try {
+          await fs.checkPermissions();
+          await refreshFiles();
+        } catch (fsErr) {
+          console.warn('Initial file scan failed, likely permission denied:', fsErr);
+        }
+      } catch (error: any) {
+        console.error('CRITICAL INIT ERROR:', error);
+        setInitError(error?.message || 'Failed to initialize application data.');
+      } finally {
+        setIsLoading(false);
+      }
     };
     init();
   }, []);
@@ -269,6 +281,23 @@ export default function App() {
   }, [activeModal, documents]);
 
   if (isLoading) return null;
+
+  if (initError) {
+    return (
+      <div className="h-screen bg-slate-950 flex items-center justify-center p-10 text-center">
+        <div className="max-w-md bg-red-900/20 border border-red-500/30 p-8 rounded-3xl">
+          <h1 className="text-2xl font-bold text-red-400 mb-4">Initialization Failed</h1>
+          <p className="text-slate-400 mb-6">{initError}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen bg-slate-950 text-slate-100 flex flex-col font-sans overflow-hidden select-none">
