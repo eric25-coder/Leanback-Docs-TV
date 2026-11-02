@@ -1,0 +1,53 @@
+npm error code EUSAGE
+npm error
+npm error `npm ci` can only install packages when your package.json and package-lock.json or npm-shrinkwrap.json are in sync. Please update your lock file with `npm install` before continuing.
+npm error
+npm error Missing: @capacitor/app@8.1.2 from lock file
+npm error Missing: @types/multer@2.3.0 from lock file
+npm error Missing: @types/qrcode@1.5.6 from lock file
+npm error Missing: multer@2.5.0 from lock file
+npm error Missing: qrcode@1.5.4 from lock file
+npm error Missing: smb2@0.2.11 from lock file
+npm error Missing: append-field@1.0.0 from lock file
+npm error Missing: busboy@1.6.0 from lock file
+npm error Missing: streamsearch@1.1.0 from lock file
+npm error Missing: dijkstrajs@1.0.3 from lock file
+npm error Missing: pngjs@5.0.0 from lock file
+npm error Missing: yargs@15.4.1 from lock file
+npm error Missing: ntlm@0.1.3 from lock file
+npm error Missing: cliui@6.0.0 from lock file
+npm error Missing: decamelize@1.2.0 from lock file
+npm error Missing: find-up@4.1.0 from lock file
+npm error Missing: get-caller-file@2.0.5 from lock file
+npm error Missing: require-directory@2.1.1 from lock file
+npm error Missing: require-main-filename@2.0.0 from lock file
+npm error Missing: set-blocking@2.0.0 from lock file
+npm error Missing: which-module@2.0.1 from lock file
+npm error Missing: y18n@4.0.3 from lock file
+npm error Missing: yargs-parser@18.1.3 from lock file
+npm error Missing: wrap-ansi@6.2.0 from lock file
+npm error Missing: locate-path@5.0.0 from lock file
+npm error Missing: path-exists@4.0.0 from lock file
+npm error Missing: p-locate@4.1.0 from lock file
+npm error Missing: p-limit@2.3.0 from lock file
+npm error Missing: p-try@2.2.0 from lock file
+npm error Missing: camelcase@5.3.1 from lock file
+npm error
+npm error Clean install a project
+npm error
+npm error Usage:
+npm error npm ci
+npm error
+npm error Options:
+npm error [--install-strategy <hoisted|nested|shallow|linked>] [--legacy-bundling]
+npm error [--global-style] [--omit <dev|optional|peer> [--omit <dev|optional|peer> ...]]
+npm error [--include <prod|dev|optional|peer> [--include <prod|dev|optional|peer> ...]]
+npm error [--strict-peer-deps] [--foreground-scripts] [--ignore-scripts] [--no-audit]
+npm error [--no-bin-links] [--no-fund] [--dry-run]
+npm error [-w|--workspace <workspace-name> [-w|--workspace <workspace-name> ...]]
+npm error [-ws|--workspaces] [--include-workspace-root] [--install-links]
+npm error
+npm error aliases: clean-install, ic, install-clean, isntall-clean
+npm error
+npm error Run "npm help ci" for more info
+npm error A complete log of this run can be found in: /root/.npm/_logs/2026-11-02T06_15_00_389Z-debug-0.log

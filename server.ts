@@ -44,7 +44,7 @@ async function startServer() {
         autoCloseTimeout: 0
       });
 
-      smb2Client.readdir(smbPath || '', (err, files) => {
+      smb2Client.readdir(smbPath || '', (err: any, files: any) => {
         if (err) {
           console.error('SMB error:', err);
           return res.status(500).json({ error: err.message });
@@ -68,7 +68,7 @@ async function startServer() {
         autoCloseTimeout: 0
       });
 
-      smb2Client.readFile(smbPath, (err, data) => {
+      smb2Client.readFile(smbPath, (err: any, data: any) => {
         if (err) {
           console.error('SMB error:', err);
           return res.status(500).json({ error: err.message });

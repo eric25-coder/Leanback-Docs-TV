@@ -24,6 +24,7 @@ import { TransferModal } from './components/TransferModal';
 import { CloudStorageModal } from './components/CloudStorageModal';
 import { NasSetupModal } from './components/NasSetupModal';
 import { Info, Tv } from 'lucide-react';
+import { getApiUrl } from './utils/api';
 
 // Services
 import { db } from './services/db';
@@ -44,6 +45,12 @@ export default function App() {
   const [initError, setInitError] = useState<string | null>(null);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [storageInfo, setStorageInfo] = useState<any>({ freeFormatted: '12.4 GB', totalFormatted: '32.0 GB', percentUsed: 38 });
+  const [toast, setToast] = useState<{ message: string; type: 'info' | 'success' | 'error' } | null>(null);
+
+  const showToast = useCallback((message: string, type: 'info' | 'success' | 'error' = 'info') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 5000);
+  }, []);
 
   // Load Initial Data
   useEffect(() => {
@@ -139,14 +146,65 @@ export default function App() {
       source: 'app',
     }));
 
-    setDocuments([...noteDocs, ...internalFiles, ...usbFiles, ...transferFiles]);
+    const fetchNasFiles = async () => {
+      let allNasFiles: DocumentItem[] = [];
+      for (const conn of nasConnections) {
+        try {
+          const response = await fetch(getApiUrl('/api/smb/list'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              share: `\\\\${conn.host}\\${conn.share}`,
+              username: conn.username,
+              password: conn.password,
+              path: ''
+            })
+          });
+          if (response.ok) {
+            const data = await response.json();
+            const mapped: DocumentItem[] = (data.files || []).map((f: string) => {
+              const ext = f.split('.').pop()?.toLowerCase() as DocumentType || 'txt';
+              return {
+                id: `smb-${conn.id}-${f}`,
+                title: f,
+                type: ext,
+                size: 'SMB File',
+                updatedAt: new Date().toISOString().split('T')[0],
+                author: conn.label,
+                tags: ['Network', conn.label],
+                isEditable: false,
+                path: f,
+                source: 'network',
+                content: undefined // Load on demand
+              };
+            });
+            allNasFiles = [...allNasFiles, ...mapped];
+          }
+        } catch (e) {
+          console.error(`Failed to fetch files from NAS ${conn.label}:`, e);
+        }
+      }
+      return allNasFiles;
+    };
+
+    const nasFiles = await fetchNasFiles();
+    const newDocs = [...noteDocs, ...internalFiles, ...usbFiles, ...transferFiles, ...nasFiles];
     
-    // Refresh storage info
-    try {
-      const info = await fs.getStorageInfo();
-      setStorageInfo(info);
-    } catch (e) {}
+    // Check for new transfers to notify
+    if (transferFiles.length > documents.filter(d => d.tags.includes('Transferred')).length) {
+      showToast('New file received via transfer!', 'success');
+    }
+
+    setDocuments(newDocs);
   };
+
+  // Poll for transfers and USB every 30s
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refreshFiles();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [nasConnections, notes]);
 
   const handleSelectDoc = async (id: string, mode: 'view' | 'edit') => {
     const doc = documents.find((d) => d.id === id);
@@ -378,8 +436,8 @@ export default function App() {
   if (isLoading) {
     return (
       <div className="h-screen bg-slate-950 flex flex-col items-center justify-center p-10 text-center font-sans">
-        <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-[0_0_50px_rgba(37,99,235,0.3)] border border-white/20 mb-8 animate-pulse">
-           <Tv className="w-14 h-14 text-white" />
+        <div className="w-24 h-24 rounded-3xl bg-slate-900 flex items-center justify-center shadow-[0_0_50px_rgba(37,99,235,0.3)] border border-white/20 mb-8 animate-pulse overflow-hidden">
+           <img src="/assets/aistudio/Glossy_Leanback_Docs_TV_Icon_6ddbbc2f.png" alt="App Icon" className="w-full h-full object-cover" />
         </div>
         <h1 className="text-4xl font-extrabold text-white mb-2 tracking-tight">Leanback <span className="text-blue-400">Docs TV</span></h1>
         <p className="text-slate-500 uppercase tracking-[0.3em] text-xs font-bold mb-10">Initializing Ecosystem</p>
@@ -484,6 +542,20 @@ export default function App() {
       </div>
 
       <StatusBar />
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-bottom-10 duration-500">
+          <div className={`px-8 py-4 rounded-2xl shadow-2xl border backdrop-blur-xl flex items-center gap-4 ${
+            toast.type === 'success' ? 'bg-emerald-900/80 border-emerald-500/30 text-emerald-400' :
+            toast.type === 'error' ? 'bg-red-900/80 border-red-500/30 text-red-400' :
+            'bg-slate-900/80 border-white/10 text-blue-400'
+          }`}>
+            <Info className="w-5 h-5" />
+            <span className="text-base font-bold tracking-wide">{toast.message}</span>
+          </div>
+        </div>
+      )}
 
       {/* Modals & Viewers */}
       {activeModal.type === 'viewer' && activeDoc && (

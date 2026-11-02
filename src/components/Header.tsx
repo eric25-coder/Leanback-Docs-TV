@@ -27,8 +27,8 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="flex items-center justify-between px-10 py-8 bg-transparent z-40 relative">
       {/* Left: Branding */}
       <div className="flex items-center gap-6">
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-[0_0_30px_rgba(37,99,235,0.3)] border border-white/20">
-          <Tv className="w-10 h-10 text-white drop-shadow-lg" />
+        <div className="w-16 h-16 rounded-2xl bg-slate-900 flex items-center justify-center shadow-[0_0_30px_rgba(37,99,235,0.3)] border border-white/20 overflow-hidden">
+          <img src="/assets/aistudio/Glossy_Leanback_Docs_TV_Icon_6ddbbc2f.png" alt="App Icon" className="w-full h-full object-cover" />
         </div>
         <div>
           <h1 className="text-4xl font-extrabold tracking-tight text-white flex items-center gap-3 font-display">

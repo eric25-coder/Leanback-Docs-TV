@@ -3,7 +3,7 @@ import { DocumentItem, DocumentType } from '../types';
 import { 
   FileText, Table, Presentation, FileCode, Search, Sparkles, Edit3, Eye, 
   Calendar, User, HardDrive, Plus, Trash2, MoreVertical, LayoutGrid, List,
-  ArrowUpDown, Filter, Share2, Download, Folder
+  ArrowUpDown, Filter, Share2, Download, Folder, Image
 } from 'lucide-react';
 
 interface DocumentLibraryProps {
