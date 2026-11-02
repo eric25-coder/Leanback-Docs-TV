@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, FileText, Usb, Database, Clock, Search, Settings, Info, ChevronRight, Smartphone } from 'lucide-react';
+import { Home, FileText, Usb, Database, Clock, Search, Settings, Info, ChevronRight, Smartphone, Globe } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
@@ -12,6 +12,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
     { id: 'documents', label: 'My Documents', icon: FileText },
     { id: 'usb', label: 'USB Drive', icon: Usb },
     { id: 'network', label: 'Network Storage', icon: Database },
+    { id: 'cloud', label: 'Cloud Storage', icon: Globe },
     { id: 'recent', label: 'Recent Files', icon: Clock },
     { id: 'search', label: 'Search', icon: Search },
     { id: 'transfer', label: 'Transfer Files', icon: Smartphone },

@@ -18,7 +18,10 @@ import { AiAssistantModal } from './components/AiAssistantModal';
 import { SettingsModal } from './components/SettingsModal';
 import { NewNoteModal } from './components/NewNoteModal';
 import { RemoteSimulator } from './components/RemoteSimulator';
+import { ImageViewerModal } from './components/ImageViewerModal';
+import { CsvViewerModal } from './components/CsvViewerModal';
 import { TransferModal } from './components/TransferModal';
+import { CloudStorageModal } from './components/CloudStorageModal';
 import { NasSetupModal } from './components/NasSetupModal';
 import { Info, Tv } from 'lucide-react';
 
@@ -95,14 +98,34 @@ export default function App() {
 
   const refreshFiles = async () => {
     const internalFiles = await fs.listFiles('', Directory.Documents);
-    // On TV, USB is often Directory.External or a child of /storage
-    // For this implementation, we try to read External if possible
+    
     let usbFiles: DocumentItem[] = [];
     try {
       usbFiles = await fs.listFiles('', Directory.External);
     } catch (e) {}
 
-    // Map notes to documents too so they appear in library
+    // Fetch Transferred Files
+    let transferFiles: DocumentItem[] = [];
+    try {
+      const response = await fetch(getApiUrl('/api/transfers'));
+      if (response.ok) {
+        const data = await response.json();
+        transferFiles = (data.transfers || []).map((f: any) => ({
+          id: `transfer-${f.name}`,
+          title: f.name,
+          type: f.name.split('.').pop()?.toLowerCase() as DocumentType || 'txt',
+          size: `${(f.size / 1024).toFixed(1)} KB`,
+          updatedAt: new Date(f.createdAt).toISOString().split('T')[0],
+          author: 'Remote User',
+          tags: ['Transferred'],
+          isEditable: ['txt', 'md'].includes(f.name.split('.').pop()?.toLowerCase()),
+          path: f.name,
+          source: 'internal', // Treat as internal for viewing logic since it's on the server uploads dir
+        }));
+      }
+    } catch (e) {}
+
+    // Map notes to documents too
     const noteDocs: DocumentItem[] = notes.map(n => ({
       id: `note-${n.id}`,
       title: n.title,
@@ -116,7 +139,7 @@ export default function App() {
       source: 'app',
     }));
 
-    setDocuments([...noteDocs, ...internalFiles, ...usbFiles]);
+    setDocuments([...noteDocs, ...internalFiles, ...usbFiles, ...transferFiles]);
     
     // Refresh storage info
     try {
@@ -138,13 +161,17 @@ export default function App() {
     if (doc.source !== 'app' && !doc.content) {
       try {
         const directory = doc.source === 'usb' ? Directory.External : Directory.Documents;
-        const isBinary = ['pdf', 'docx', 'xlsx', 'pptx'].includes(doc.type);
+        const isBinary = ['pdf', 'docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt', 'png', 'jpg', 'jpeg', 'gif', 'webp'].includes(doc.type);
         const data = await fs.readFile(doc.path, directory, isBinary);
         
         if (doc.type === 'docx') {
           doc.content = await docParser.parseDocx(data);
-        } else if (doc.type === 'xlsx') {
+        } else if (doc.type === 'doc') {
+          doc.content = await docParser.parseDoc(data);
+        } else if (doc.type === 'xlsx' || doc.type === 'xls') {
           doc.content = await docParser.parseXlsx(data);
+        } else if (doc.type === 'ppt') {
+          doc.content = await docParser.parsePpt(data);
         } else {
           doc.content = data;
         }
@@ -401,13 +428,15 @@ export default function App() {
         <Sidebar activeTab={activeTab} onTabChange={(tab) => {
           if (tab === 'transfer') {
             setActiveModal({ type: 'transfer' });
+          } else if (tab === 'cloud') {
+            setActiveModal({ type: 'cloud' });
           } else {
             setActiveTab(tab);
             if (tab === 'home') setActiveModal({ type: 'library' });
           }
         }} />
 
-        <main className="flex-1 flex flex-col relative">
+        <main className="flex-1 flex flex-col relative tv-safe-area">
 
           {activeTab === 'home' && activeModal.type === 'library' ? (
             <Dashboard 
@@ -462,16 +491,22 @@ export default function App() {
           {activeDoc.type === 'pdf' && (
             <PdfViewerModal doc={activeDoc} onClose={() => setActiveModal({ type: 'library' })} onOpenAi={() => setActiveModal({ type: 'ai_copilot', docId: activeDoc.id })} />
           )}
-          {activeDoc.type === 'docx' && (
+          {(activeDoc.type === 'docx' || activeDoc.type === 'doc') && (
             <WordViewerModal doc={activeDoc} onClose={() => setActiveModal({ type: 'library' })} onOpenAi={() => setActiveModal({ type: 'ai_copilot', docId: activeDoc.id })} />
           )}
-          {activeDoc.type === 'xlsx' && (
+          {(activeDoc.type === 'xlsx' || activeDoc.type === 'xls') && (
             <ExcelViewerModal doc={activeDoc} onClose={() => setActiveModal({ type: 'library' })} onOpenAi={() => setActiveModal({ type: 'ai_copilot', docId: activeDoc.id })} />
           )}
-          {activeDoc.type === 'pptx' && (
+          {(activeDoc.type === 'pptx' || activeDoc.type === 'ppt') && (
             <PowerPointViewerModal doc={activeDoc} onClose={() => setActiveModal({ type: 'library' })} onOpenAi={() => setActiveModal({ type: 'ai_copilot', docId: activeDoc.id })} />
           )}
-          {['txt', 'md', 'json', 'csv'].includes(activeDoc.type) && (
+          {['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(activeDoc.type) && (
+            <ImageViewerModal doc={activeDoc} onClose={() => setActiveModal({ type: 'library' })} />
+          )}
+          {activeDoc.type === 'csv' && (
+            <CsvViewerModal doc={activeDoc} onClose={() => setActiveModal({ type: 'library' })} onOpenAi={() => setActiveModal({ type: 'ai_copilot', docId: activeDoc.id })} />
+          )}
+          {['txt', 'md', 'json'].includes(activeDoc.type) && (
             <TextEditorModal doc={activeDoc} onClose={() => setActiveModal({ type: 'library' })} onSave={(updated) => handleSaveDocContent(activeDoc.id, updated)} />
           )}
         </>
@@ -551,7 +586,57 @@ export default function App() {
       )}
 
       {activeModal.type === 'transfer' && (
-        <TransferModal onClose={() => setActiveModal({ type: 'library' })} />
+        <TransferModal 
+          onClose={() => setActiveModal({ type: 'library' })} 
+          onOpenDoc={async (filename) => {
+            try {
+              const response = await fetch(getApiUrl(`/api/transfers/${filename}`));
+              if (response.ok) {
+                const data = await response.json();
+                const ext = filename.split('.').pop()?.toLowerCase() as DocumentType || 'txt';
+                
+                // Temporary document item for the transferred file
+                const tempDoc: DocumentItem = {
+                  id: `transfer-${Date.now()}`,
+                  title: filename,
+                  type: ext,
+                  size: 'Unknown',
+                  updatedAt: new Date().toISOString().split('T')[0],
+                  author: 'Remote User',
+                  tags: ['Transferred'],
+                  isEditable: ['txt', 'md'].includes(ext),
+                  path: filename,
+                  source: 'internal',
+                  content: data.content
+                };
+
+                // Add to documents list so viewers can find it
+                setDocuments(prev => [tempDoc, ...prev]);
+                
+                // Parse if needed
+                if (ext === 'docx') {
+                  tempDoc.content = await docParser.parseDocx(data.content);
+                } else if (ext === 'xlsx') {
+                  tempDoc.content = await docParser.parseXlsx(data.content);
+                }
+
+                setActiveModal({ type: 'viewer', docId: tempDoc.id });
+              }
+            } catch (err) {
+              console.error('Failed to open transferred doc:', err);
+            }
+          }}
+        />
+      )}
+
+      {activeModal.type === 'cloud' && (
+        <CloudStorageModal 
+          onClose={() => setActiveModal({ type: 'library' })}
+          onSelectDoc={(file) => {
+            console.log('Cloud file selected:', file);
+            // Handle cloud file opening
+          }}
+        />
       )}
     </div>
   );

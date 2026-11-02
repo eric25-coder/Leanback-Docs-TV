@@ -1,4 +1,4 @@
-export type DocumentType = 'pdf' | 'docx' | 'xlsx' | 'pptx' | 'txt' | 'md' | 'json' | 'csv' | 'folder';
+export type DocumentType = 'pdf' | 'docx' | 'doc' | 'xlsx' | 'xls' | 'pptx' | 'ppt' | 'txt' | 'md' | 'json' | 'csv' | 'folder' | 'png' | 'jpg' | 'jpeg' | 'gif' | 'webp';
 
 export interface DocumentItem {
   id: string;
@@ -84,7 +84,8 @@ export type ActiveModal =
   | { type: 'new_note'; noteId?: string }
   | { type: 'tv_storage' }
   | { type: 'nas_setup' }
-  | { type: 'transfer' };
+  | { type: 'transfer' }
+  | { type: 'cloud' };
 
 export interface StorageInfo {
   free: number;

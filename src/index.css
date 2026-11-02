@@ -41,5 +41,26 @@
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     @apply bg-white/20;
   }
+  /* TV-Safe Area (Overscan Protection) */
+  .tv-safe-area {
+    padding: 5vh 5vw;
+  }
+
+  .tv-safe-margin {
+    margin: 5vh 5vw;
+  }
+
+  /* Responsive Text for TV */
+  @media (min-width: 1920px) {
+    html {
+      font-size: 20px;
+    }
+  }
+
+  @media (min-width: 3840px) {
+    html {
+      font-size: 32px;
+    }
+  }
 }
 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Database, Shield, Globe, Server, CheckCircle2, X } from 'lucide-react';
+import { Database, Shield, Globe, Server, CheckCircle2, X, RefreshCw, AlertCircle } from 'lucide-react';
 import { NetworkConnection } from '../types';
+import { getApiUrl } from '../utils/api';
 
 interface NasSetupModalProps {
   onClose: () => void;
@@ -15,10 +16,37 @@ export const NasSetupModal: React.FC<NasSetupModalProps> = ({ onClose, onConnect
     username: '',
     password: '',
   });
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onConnect(formData);
+    setIsConnecting(true);
+    setError(null);
+
+    try {
+      // Test the SMB connection through the proxy
+      const response = await fetch(getApiUrl('/api/smb/list'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          share: `\\\\${formData.host}\\${formData.share}`,
+          username: formData.username,
+          password: formData.password
+        })
+      });
+
+      if (response.ok) {
+        onConnect(formData);
+      } else {
+        const data = await response.json();
+        setError(data.error || 'Failed to connect to network share. Verify address and credentials.');
+      }
+    } catch (err: any) {
+      setError('Network error. Ensure the server is accessible.');
+    } finally {
+      setIsConnecting(false);
+    }
   };
 
   return (
@@ -32,7 +60,7 @@ export const NasSetupModal: React.FC<NasSetupModalProps> = ({ onClose, onConnect
             </div>
             <div>
               <h2 className="text-3xl font-bold text-white">Add Network Storage</h2>
-              <p className="text-teal-400/60 font-mono text-xs uppercase tracking-widest mt-1">NAS • SMB • FTP • CLOUD</p>
+              <p className="text-teal-400/60 font-mono text-xs uppercase tracking-widest mt-1">NAS • SMB • WINDOWS SHARE</p>
             </div>
           </div>
           <button onClick={onClose} className="p-4 bg-white/5 hover:bg-white/10 text-slate-400 rounded-2xl transition-all focus:ring-2 focus:ring-teal-500">
@@ -42,6 +70,13 @@ export const NasSetupModal: React.FC<NasSetupModalProps> = ({ onClose, onConnect
 
         {/* Content */}
         <form onSubmit={handleSubmit} className="p-10 space-y-8 flex-1 overflow-y-auto custom-scrollbar">
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-6 flex items-center gap-4 animate-in fade-in zoom-in duration-300">
+              <AlertCircle className="w-6 h-6 text-red-400 shrink-0" />
+              <p className="text-sm text-red-100/70 font-medium">{error}</p>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-8">
             <div className="space-y-3">
               <label className="text-sm font-bold text-slate-400 uppercase tracking-widest ml-1">Device Label</label>
@@ -50,7 +85,7 @@ export const NasSetupModal: React.FC<NasSetupModalProps> = ({ onClose, onConnect
                 <input 
                   type="text" 
                   required
-                  placeholder="e.g. Home Server"
+                  placeholder="e.g. Work PC"
                   value={formData.label}
                   onChange={(e) => setFormData({...formData, label: e.target.value})}
                   className="w-full bg-slate-950 border border-white/5 rounded-2xl pl-14 pr-6 py-5 text-white focus:outline-none focus:ring-4 focus:ring-teal-500/30 transition-all"
@@ -74,11 +109,11 @@ export const NasSetupModal: React.FC<NasSetupModalProps> = ({ onClose, onConnect
             </div>
 
             <div className="space-y-3 col-span-2">
-              <label className="text-sm font-bold text-slate-400 uppercase tracking-widest ml-1">Shared Folder Path</label>
+              <label className="text-sm font-bold text-slate-400 uppercase tracking-widest ml-1">Shared Folder Name</label>
               <input 
                 type="text" 
                 required
-                placeholder="/documents/work"
+                placeholder="Documents"
                 value={formData.share}
                 onChange={(e) => setFormData({...formData, share: e.target.value})}
                 className="w-full bg-slate-950 border border-white/5 rounded-2xl px-6 py-5 text-white focus:outline-none focus:ring-4 focus:ring-teal-500/30 transition-all"
@@ -86,10 +121,10 @@ export const NasSetupModal: React.FC<NasSetupModalProps> = ({ onClose, onConnect
             </div>
 
             <div className="space-y-3">
-              <label className="text-sm font-bold text-slate-400 uppercase tracking-widest ml-1">Username (Optional)</label>
+              <label className="text-sm font-bold text-slate-400 uppercase tracking-widest ml-1">Username</label>
               <input 
                 type="text" 
-                placeholder="admin"
+                placeholder="Guest"
                 value={formData.username}
                 onChange={(e) => setFormData({...formData, username: e.target.value})}
                 className="w-full bg-slate-950 border border-white/5 rounded-2xl px-6 py-5 text-white focus:outline-none focus:ring-4 focus:ring-teal-500/30 transition-all"
@@ -97,7 +132,7 @@ export const NasSetupModal: React.FC<NasSetupModalProps> = ({ onClose, onConnect
             </div>
 
             <div className="space-y-3">
-              <label className="text-sm font-bold text-slate-400 uppercase tracking-widest ml-1">Password (Optional)</label>
+              <label className="text-sm font-bold text-slate-400 uppercase tracking-widest ml-1">Password</label>
               <div className="relative group">
                 <Shield className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-teal-400 transition-colors" />
                 <input 
@@ -111,26 +146,28 @@ export const NasSetupModal: React.FC<NasSetupModalProps> = ({ onClose, onConnect
             </div>
           </div>
 
-          <div className="bg-teal-500/10 border border-teal-500/20 rounded-2xl p-6 flex items-start gap-4">
-            <CheckCircle2 className="w-6 h-6 text-teal-400 shrink-0 mt-0.5" />
-            <p className="text-sm text-teal-100/70 leading-relaxed">
-              Your connection details are encrypted and stored locally on this TV. We never transmit your credentials to external servers.
-            </p>
-          </div>
-
           <div className="flex gap-4 pt-4">
             <button 
               type="button"
               onClick={onClose}
-              className="flex-1 py-5 bg-slate-800 hover:bg-slate-700 text-white rounded-2xl font-bold transition-all focus:ring-4 focus:ring-teal-500/30 outline-none"
+              disabled={isConnecting}
+              className="flex-1 py-5 bg-slate-800 hover:bg-slate-700 text-white rounded-2xl font-bold transition-all focus:ring-4 focus:ring-teal-500/30 outline-none disabled:opacity-50"
             >
               Cancel
             </button>
             <button 
               type="submit"
-              className="flex-1 py-5 bg-teal-600 hover:bg-teal-500 text-white rounded-2xl font-bold transition-all focus:ring-4 focus:ring-white shadow-lg shadow-teal-500/20 outline-none"
+              disabled={isConnecting}
+              className="flex-1 py-5 bg-teal-600 hover:bg-teal-500 text-white rounded-2xl font-bold transition-all focus:ring-4 focus:ring-white shadow-lg shadow-teal-500/20 outline-none flex items-center justify-center gap-3 disabled:bg-teal-900"
             >
-              Connect Server
+              {isConnecting ? (
+                <>
+                  <RefreshCw className="w-5 h-5 animate-spin" />
+                  <span>Verifying...</span>
+                </>
+              ) : (
+                <span>Connect Server</span>
+              )}
             </button>
           </div>
         </form>

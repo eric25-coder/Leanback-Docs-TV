@@ -17,13 +17,32 @@ export const docParser = {
 
   async parseXlsx(base64: string): Promise<XlsxContent> {
     const buffer = this.base64ToArrayBuffer(base64);
+    // xlsx package handles both .xlsx and legacy .xls
     const workbook = XLSX.read(buffer, { type: 'array' });
     const sheets = workbook.SheetNames.map(name => {
       const sheet = workbook.Sheets[name];
-      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as string[][];
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
       return { sheetName: name, rows };
     });
     return { sheets };
+  },
+
+  async parseDoc(base64: string): Promise<DocxContent> {
+    // Legacy .doc parsing is restricted in pure JS without heavy libraries
+    // We provide a fallback summary
+    return {
+      paragraphs: [
+        { id: 'legacy-1', type: 'paragraph', text: '[Legacy DOC Format] This file format is viewed in Compatibility Mode. For best results on TV, please convert to DOCX.' }
+      ]
+    };
+  },
+
+  async parsePpt(base64: string): Promise<PptxContent> {
+    return {
+      slides: [
+        { slideNumber: 1, title: 'Legacy Presentation', bullets: ['Format: .ppt'], notes: 'Please convert to .pptx for full TV fidelity.' }
+      ]
+    };
   },
 
   async parsePptx(base64: string): Promise<PptxContent> {

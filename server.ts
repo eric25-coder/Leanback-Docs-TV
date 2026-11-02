@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import multer from 'multer';
 import fs from 'fs';
+import SMB2 from 'smb2';
 
 dotenv.config();
 
@@ -14,6 +15,11 @@ const __filename_res = isESM ? fileURLToPath(import.meta.url) : __filename;
 const __dirname_res = isESM ? path.dirname(__filename_res) : __dirname;
 
 const upload = multer({ dest: 'uploads/' });
+
+// Create uploads dir if not exists
+if (!fs.existsSync('uploads')) {
+  fs.mkdirSync('uploads');
+}
 
 async function startServer() {
   const app = express();
@@ -26,36 +32,107 @@ async function startServer() {
   // Initialize Gemini AI SDK
   const ai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
-  // API Route for file uploads
+  // --- SMB Proxy Routes ---
+  app.post('/api/smb/list', async (req, res) => {
+    const { share, domain, username, password, path: smbPath } = req.body;
+    try {
+      const smb2Client = new SMB2({
+        share,
+        domain,
+        username,
+        password,
+        autoCloseTimeout: 0
+      });
+
+      smb2Client.readdir(smbPath || '', (err, files) => {
+        if (err) {
+          console.error('SMB error:', err);
+          return res.status(500).json({ error: err.message });
+        }
+        res.json({ files });
+        smb2Client.disconnect();
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post('/api/smb/read', async (req, res) => {
+    const { share, domain, username, password, path: smbPath } = req.body;
+    try {
+      const smb2Client = new SMB2({
+        share,
+        domain,
+        username,
+        password,
+        autoCloseTimeout: 0
+      });
+
+      smb2Client.readFile(smbPath, (err, data) => {
+        if (err) {
+          console.error('SMB error:', err);
+          return res.status(500).json({ error: err.message });
+        }
+        res.json({ content: data.toString('base64') });
+        smb2Client.disconnect();
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // --- File Upload & Transfer ---
   app.post('/api/upload', upload.single('file'), (req, res) => {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
-    // File is saved in 'uploads/' directory
+    // Rename file to original name for easier tracking
+    const targetPath = path.join('uploads', req.file.originalname);
+    fs.renameSync(req.file.path, targetPath);
     res.json({ message: 'File received', filename: req.file.originalname });
   });
 
-  // API Routes
+  app.get('/api/transfers', (req, res) => {
+    try {
+      const files = fs.readdirSync('uploads');
+      const stats = files.map(f => {
+        const s = fs.statSync(path.join('uploads', f));
+        return {
+          name: f,
+          size: s.size,
+          createdAt: s.birthtime
+        };
+      });
+      res.json({ transfers: stats });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to list transfers' });
+    }
+  });
+
+  app.get('/api/transfers/:filename', (req, res) => {
+    const filePath = path.join('uploads', req.params.filename);
+    if (fs.existsSync(filePath)) {
+      const data = fs.readFileSync(filePath);
+      res.json({ content: data.toString('base64') });
+    } else {
+      res.status(404).json({ error: 'File not found' });
+    }
+  });
+
+  // --- Gemini AI Routes ---
   app.post('/api/gemini/summarize', async (req, res) => {
     try {
       const { documentTitle, documentType, content } = req.body;
-      if (!content) {
-        return res.status(400).json({ error: 'Document content is required' });
-      }
+      if (!content) return res.status(400).json({ error: 'Document content is required' });
 
       const prompt = `Provide a structured summary of the following ${documentType.toUpperCase()} document titled "${documentTitle}". Include key takeaways, main sections or data points, and executive notes suitable for an Android TV viewer.\n\nContent:\n${typeof content === 'string' ? content.substring(0, 15000) : JSON.stringify(content).substring(0, 15000)}`;
-
       const model = ai.getGenerativeModel({ 
         model: 'gemini-1.5-flash',
         systemInstruction: 'You are an expert AI document assistant for an Android TV productivity app. Provide clear, well-formatted summaries with bullet points.',
       });
-
       const result = await model.generateContent(prompt);
-      const response = result.response;
-
-      res.json({ summary: response.text() || 'No summary generated.' });
+      res.json({ summary: result.response.text() || 'No summary generated.' });
     } catch (error: any) {
-      console.error('Gemini summarize error:', error);
       res.status(500).json({ error: error.message || 'Failed to generate summary' });
     }
   });
@@ -63,59 +140,17 @@ async function startServer() {
   app.post('/api/gemini/qa', async (req, res) => {
     try {
       const { documentTitle, documentType, content, question } = req.body;
-      if (!question || !content) {
-        return res.status(400).json({ error: 'Question and content are required' });
-      }
+      if (!question || !content) return res.status(400).json({ error: 'Question and content are required' });
 
       const prompt = `Based on the following ${documentType.toUpperCase()} document titled "${documentTitle}", answer the user's question clearly and concisely.\n\nDocument Content:\n${typeof content === 'string' ? content.substring(0, 15000) : JSON.stringify(content).substring(0, 15000)}\n\nQuestion: ${question}`;
-
       const model = ai.getGenerativeModel({ 
         model: 'gemini-1.5-flash',
         systemInstruction: 'You are an intelligent document Q&A assistant optimized for Android TV display.',
       });
-
       const result = await model.generateContent(prompt);
-      const response = result.response;
-
-      res.json({ answer: response.text() || 'No answer generated.' });
+      res.json({ answer: result.response.text() || 'No answer generated.' });
     } catch (error: any) {
-      console.error('Gemini QA error:', error);
       res.status(500).json({ error: error.message || 'Failed to answer question' });
-    }
-  });
-
-  app.post('/api/gemini/edit-assist', async (req, res) => {
-    try {
-      const { text, action, prompt: customPrompt } = req.body;
-      if (!text) {
-        return res.status(400).json({ error: 'Text content is required' });
-      }
-
-      let userPrompt = '';
-      if (action === 'proofread') {
-        userPrompt = `Proofread and fix grammar/spelling in the following text, keeping the original tone and format:\n\n${text}`;
-      } else if (action === 'expand') {
-        userPrompt = `Expand and elaborate on the following text with professional details:\n\n${text}`;
-      } else if (action === 'summarize') {
-        userPrompt = `Provide a concise summary of the following text:\n\n${text}`;
-      } else if (action === 'custom' && customPrompt) {
-        userPrompt = `Perform the following instruction on the text: "${customPrompt}"\n\nText:\n${text}`;
-      } else {
-        userPrompt = `Improve the following text:\n\n${text}`;
-      }
-
-      const model = ai.getGenerativeModel({ 
-        model: 'gemini-1.5-flash',
-        systemInstruction: 'You are an expert AI writing assistant for text editing on Android TV.',
-      });
-
-      const result = await model.generateContent(userPrompt);
-      const response = result.response;
-
-      res.json({ result: response.text() || text });
-    } catch (error: any) {
-      console.error('Gemini edit assist error:', error);
-      res.status(500).json({ error: error.message || 'Failed to process text' });
     }
   });
 
@@ -128,9 +163,6 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    // In production, server.js is inside dist/ along with assets
-    // Since __dirname is dist/, we serve from there
-    console.log(`Serving static assets from: ${__dirname_res}`);
     app.use(express.static(__dirname_res));
     app.get('*', (req, res) => {
       res.sendFile(path.join(__dirname_res, 'index.html'));

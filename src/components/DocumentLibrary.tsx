@@ -71,9 +71,17 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
   const getDocIcon = (type: DocumentType) => {
     switch (type) {
       case 'pdf': return <FileText className="w-8 h-8 text-red-400" />;
-      case 'docx': return <FileText className="w-8 h-8 text-blue-400" />;
-      case 'xlsx': return <Table className="w-8 h-8 text-emerald-400" />;
-      case 'pptx': return <Presentation className="w-8 h-8 text-amber-400" />;
+      case 'docx':
+      case 'doc': return <FileText className="w-8 h-8 text-blue-400" />;
+      case 'xlsx':
+      case 'xls': return <Table className="w-8 h-8 text-emerald-400" />;
+      case 'pptx':
+      case 'ppt': return <Presentation className="w-8 h-8 text-amber-400" />;
+      case 'png':
+      case 'jpg':
+      case 'jpeg':
+      case 'gif':
+      case 'webp': return <Image className="w-8 h-8 text-blue-300" />;
       default: return <FileCode className="w-8 h-8 text-purple-400" />;
     }
   };
@@ -81,9 +89,17 @@ export const DocumentLibrary: React.FC<DocumentLibraryProps> = ({
   const getBadgeColor = (type: DocumentType) => {
     switch (type) {
       case 'pdf': return 'bg-red-500/20 text-red-300 border-red-500/30';
-      case 'docx': return 'bg-blue-500/20 text-blue-300 border-blue-500/30';
-      case 'xlsx': return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30';
-      case 'pptx': return 'bg-amber-500/20 text-amber-300 border-amber-500/30';
+      case 'docx':
+      case 'doc': return 'bg-blue-500/20 text-blue-300 border-blue-500/30';
+      case 'xlsx':
+      case 'xls': return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30';
+      case 'pptx':
+      case 'ppt': return 'bg-amber-500/20 text-amber-300 border-amber-500/30';
+      case 'png':
+      case 'jpg':
+      case 'jpeg':
+      case 'gif':
+      case 'webp': return 'bg-blue-300/10 text-blue-200 border-blue-400/20';
       default: return 'bg-purple-500/20 text-purple-300 border-purple-500/30';
     }
   };
